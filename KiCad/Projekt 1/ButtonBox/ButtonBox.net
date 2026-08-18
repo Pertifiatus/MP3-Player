@@ -1,0 +1,2797 @@
+(export
+	(version "E")
+	(design
+		(source "/Users/pertificatus/Downloads/ButtonBox/ButtonBox.kicad_sch")
+		(date "2026-08-17T23:27:24")
+		(tool "Eeschema 10.0.5")
+		(sheet
+			(number "1")
+			(name "/")
+			(tstamps "/")
+			(title_block
+				(title)
+				(company)
+				(rev)
+				(date)
+				(source "ButtonBox.kicad_sch")
+				(comment
+					(number "1")
+					(value "")
+				)
+				(comment
+					(number "2")
+					(value "")
+				)
+				(comment
+					(number "3")
+					(value "")
+				)
+				(comment
+					(number "4")
+					(value "")
+				)
+				(comment
+					(number "5")
+					(value "")
+				)
+				(comment
+					(number "6")
+					(value "")
+				)
+				(comment
+					(number "7")
+					(value "")
+				)
+				(comment
+					(number "8")
+					(value "")
+				)
+				(comment
+					(number "9")
+					(value "")
+				)
+			)
+		)
+	)
+	(components
+		(comp
+			(ref "C1")
+			(value "100nF")
+			(footprint "EasyEDA_Lib:C0402")
+			(datasheet "https://item.szlcsc.com/datasheet/CC0402KRX5R9BB104/107097.html")
+			(description "Capacitance:100nF Tolerance:±10% Tolerance:±10% Voltage Rating:50V Temperature Coefficient:X5R")
+			(fields
+				(field
+					(name "Manufacturer Part") "CC0402KRX5R9BB104")
+				(field
+					(name "Manufacturer") "YAGEO(国巨)")
+				(field
+					(name "Supplier Part") "C105882")
+				(field
+					(name "Supplier") "LCSC")
+				(field
+					(name "LCSC Part Name") "100nF ±10% 50V")
+				(field
+					(name "Footprint") "EasyEDA_Lib:C0402")
+				(field
+					(name "Datasheet") "https://item.szlcsc.com/datasheet/CC0402KRX5R9BB104/107097.html")
+				(field
+					(name "Description") "Capacitance:100nF Tolerance:±10% Tolerance:±10% Voltage Rating:50V Temperature Coefficient:X5R")
+			)
+			(libsource
+				(lib "EasyEDA_Lib")
+				(part "CC0402KRX5R9BB104")
+				(description "Capacitance:100nF Tolerance:±10% Tolerance:±10% Voltage Rating:50V Temperature Coefficient:X5R")
+			)
+			(property
+				(name "Manufacturer Part")
+				(value "CC0402KRX5R9BB104")
+			)
+			(property
+				(name "Manufacturer")
+				(value "YAGEO(国巨)")
+			)
+			(property
+				(name "Supplier Part")
+				(value "C105882")
+			)
+			(property
+				(name "Supplier")
+				(value "LCSC")
+			)
+			(property
+				(name "LCSC Part Name")
+				(value "100nF ±10% 50V")
+			)
+			(property
+				(name "Sheetname")
+				(value "ButtonBox")
+			)
+			(property
+				(name "Sheetfile")
+				(value "ButtonBox.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "a9c01523-58b7-4cd7-892c-a5775f953f9a")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "C2")
+			(value "100nF")
+			(footprint "EasyEDA_Lib:C0402")
+			(datasheet "https://item.szlcsc.com/datasheet/CC0402KRX5R9BB104/107097.html")
+			(description "Capacitance:100nF Tolerance:±10% Tolerance:±10% Voltage Rating:50V Temperature Coefficient:X5R")
+			(fields
+				(field
+					(name "Manufacturer Part") "CC0402KRX5R9BB104")
+				(field
+					(name "Manufacturer") "YAGEO(国巨)")
+				(field
+					(name "Supplier Part") "C105882")
+				(field
+					(name "Supplier") "LCSC")
+				(field
+					(name "LCSC Part Name") "100nF ±10% 50V")
+				(field
+					(name "Footprint") "EasyEDA_Lib:C0402")
+				(field
+					(name "Datasheet") "https://item.szlcsc.com/datasheet/CC0402KRX5R9BB104/107097.html")
+				(field
+					(name "Description") "Capacitance:100nF Tolerance:±10% Tolerance:±10% Voltage Rating:50V Temperature Coefficient:X5R")
+			)
+			(libsource
+				(lib "EasyEDA_Lib")
+				(part "CC0402KRX5R9BB104")
+				(description "Capacitance:100nF Tolerance:±10% Tolerance:±10% Voltage Rating:50V Temperature Coefficient:X5R")
+			)
+			(property
+				(name "Manufacturer Part")
+				(value "CC0402KRX5R9BB104")
+			)
+			(property
+				(name "Manufacturer")
+				(value "YAGEO(国巨)")
+			)
+			(property
+				(name "Supplier Part")
+				(value "C105882")
+			)
+			(property
+				(name "Supplier")
+				(value "LCSC")
+			)
+			(property
+				(name "LCSC Part Name")
+				(value "100nF ±10% 50V")
+			)
+			(property
+				(name "Sheetname")
+				(value "ButtonBox")
+			)
+			(property
+				(name "Sheetfile")
+				(value "ButtonBox.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "75cb19bb-0e4f-4266-b476-064278bf94a3")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "C3")
+			(value "100nF")
+			(footprint "EasyEDA_Lib:C0402")
+			(datasheet "https://item.szlcsc.com/datasheet/CC0402KRX5R9BB104/107097.html")
+			(description "Capacitance:100nF Tolerance:±10% Tolerance:±10% Voltage Rating:50V Temperature Coefficient:X5R")
+			(fields
+				(field
+					(name "Manufacturer Part") "CC0402KRX5R9BB104")
+				(field
+					(name "Manufacturer") "YAGEO(国巨)")
+				(field
+					(name "Supplier Part") "C105882")
+				(field
+					(name "Supplier") "LCSC")
+				(field
+					(name "LCSC Part Name") "100nF ±10% 50V")
+				(field
+					(name "Footprint") "EasyEDA_Lib:C0402")
+				(field
+					(name "Datasheet") "https://item.szlcsc.com/datasheet/CC0402KRX5R9BB104/107097.html")
+				(field
+					(name "Description") "Capacitance:100nF Tolerance:±10% Tolerance:±10% Voltage Rating:50V Temperature Coefficient:X5R")
+			)
+			(libsource
+				(lib "EasyEDA_Lib")
+				(part "CC0402KRX5R9BB104")
+				(description "Capacitance:100nF Tolerance:±10% Tolerance:±10% Voltage Rating:50V Temperature Coefficient:X5R")
+			)
+			(property
+				(name "Manufacturer Part")
+				(value "CC0402KRX5R9BB104")
+			)
+			(property
+				(name "Manufacturer")
+				(value "YAGEO(国巨)")
+			)
+			(property
+				(name "Supplier Part")
+				(value "C105882")
+			)
+			(property
+				(name "Supplier")
+				(value "LCSC")
+			)
+			(property
+				(name "LCSC Part Name")
+				(value "100nF ±10% 50V")
+			)
+			(property
+				(name "Sheetname")
+				(value "ButtonBox")
+			)
+			(property
+				(name "Sheetfile")
+				(value "ButtonBox.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "797523ba-67f0-4e8e-8b27-e9412e0447e5")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "C4")
+			(value "100nF")
+			(footprint "EasyEDA_Lib:C0402")
+			(datasheet "https://item.szlcsc.com/datasheet/CC0402KRX5R9BB104/107097.html")
+			(description "Capacitance:100nF Tolerance:±10% Tolerance:±10% Voltage Rating:50V Temperature Coefficient:X5R")
+			(fields
+				(field
+					(name "Manufacturer Part") "CC0402KRX5R9BB104")
+				(field
+					(name "Manufacturer") "YAGEO(国巨)")
+				(field
+					(name "Supplier Part") "C105882")
+				(field
+					(name "Supplier") "LCSC")
+				(field
+					(name "LCSC Part Name") "100nF ±10% 50V")
+				(field
+					(name "Footprint") "EasyEDA_Lib:C0402")
+				(field
+					(name "Datasheet") "https://item.szlcsc.com/datasheet/CC0402KRX5R9BB104/107097.html")
+				(field
+					(name "Description") "Capacitance:100nF Tolerance:±10% Tolerance:±10% Voltage Rating:50V Temperature Coefficient:X5R")
+			)
+			(libsource
+				(lib "EasyEDA_Lib")
+				(part "CC0402KRX5R9BB104")
+				(description "Capacitance:100nF Tolerance:±10% Tolerance:±10% Voltage Rating:50V Temperature Coefficient:X5R")
+			)
+			(property
+				(name "Manufacturer Part")
+				(value "CC0402KRX5R9BB104")
+			)
+			(property
+				(name "Manufacturer")
+				(value "YAGEO(国巨)")
+			)
+			(property
+				(name "Supplier Part")
+				(value "C105882")
+			)
+			(property
+				(name "Supplier")
+				(value "LCSC")
+			)
+			(property
+				(name "LCSC Part Name")
+				(value "100nF ±10% 50V")
+			)
+			(property
+				(name "Sheetname")
+				(value "ButtonBox")
+			)
+			(property
+				(name "Sheetfile")
+				(value "ButtonBox.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "af8d6328-4a36-438f-97dd-9ff14b1ca041")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "C5")
+			(value "100nF")
+			(footprint "EasyEDA_Lib:C0402")
+			(datasheet "https://item.szlcsc.com/datasheet/CC0402KRX5R9BB104/107097.html")
+			(description "Capacitance:100nF Tolerance:±10% Tolerance:±10% Voltage Rating:50V Temperature Coefficient:X5R")
+			(fields
+				(field
+					(name "Manufacturer Part") "CC0402KRX5R9BB104")
+				(field
+					(name "Manufacturer") "YAGEO(国巨)")
+				(field
+					(name "Supplier Part") "C105882")
+				(field
+					(name "Supplier") "LCSC")
+				(field
+					(name "LCSC Part Name") "100nF ±10% 50V")
+				(field
+					(name "Footprint") "EasyEDA_Lib:C0402")
+				(field
+					(name "Datasheet") "https://item.szlcsc.com/datasheet/CC0402KRX5R9BB104/107097.html")
+				(field
+					(name "Description") "Capacitance:100nF Tolerance:±10% Tolerance:±10% Voltage Rating:50V Temperature Coefficient:X5R")
+			)
+			(libsource
+				(lib "EasyEDA_Lib")
+				(part "CC0402KRX5R9BB104")
+				(description "Capacitance:100nF Tolerance:±10% Tolerance:±10% Voltage Rating:50V Temperature Coefficient:X5R")
+			)
+			(property
+				(name "Manufacturer Part")
+				(value "CC0402KRX5R9BB104")
+			)
+			(property
+				(name "Manufacturer")
+				(value "YAGEO(国巨)")
+			)
+			(property
+				(name "Supplier Part")
+				(value "C105882")
+			)
+			(property
+				(name "Supplier")
+				(value "LCSC")
+			)
+			(property
+				(name "LCSC Part Name")
+				(value "100nF ±10% 50V")
+			)
+			(property
+				(name "Sheetname")
+				(value "ButtonBox")
+			)
+			(property
+				(name "Sheetfile")
+				(value "ButtonBox.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "a2f4d726-357c-4688-adb6-ae68930397f6")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "C6")
+			(value "100nF")
+			(footprint "EasyEDA_Lib:C0402")
+			(datasheet "https://item.szlcsc.com/datasheet/CC0402KRX5R9BB104/107097.html")
+			(description "Capacitance:100nF Tolerance:±10% Tolerance:±10% Voltage Rating:50V Temperature Coefficient:X5R")
+			(fields
+				(field
+					(name "Manufacturer Part") "CC0402KRX5R9BB104")
+				(field
+					(name "Manufacturer") "YAGEO(国巨)")
+				(field
+					(name "Supplier Part") "C105882")
+				(field
+					(name "Supplier") "LCSC")
+				(field
+					(name "LCSC Part Name") "100nF ±10% 50V")
+				(field
+					(name "Footprint") "EasyEDA_Lib:C0402")
+				(field
+					(name "Datasheet") "https://item.szlcsc.com/datasheet/CC0402KRX5R9BB104/107097.html")
+				(field
+					(name "Description") "Capacitance:100nF Tolerance:±10% Tolerance:±10% Voltage Rating:50V Temperature Coefficient:X5R")
+			)
+			(libsource
+				(lib "EasyEDA_Lib")
+				(part "CC0402KRX5R9BB104")
+				(description "Capacitance:100nF Tolerance:±10% Tolerance:±10% Voltage Rating:50V Temperature Coefficient:X5R")
+			)
+			(property
+				(name "Manufacturer Part")
+				(value "CC0402KRX5R9BB104")
+			)
+			(property
+				(name "Manufacturer")
+				(value "YAGEO(国巨)")
+			)
+			(property
+				(name "Supplier Part")
+				(value "C105882")
+			)
+			(property
+				(name "Supplier")
+				(value "LCSC")
+			)
+			(property
+				(name "LCSC Part Name")
+				(value "100nF ±10% 50V")
+			)
+			(property
+				(name "Sheetname")
+				(value "ButtonBox")
+			)
+			(property
+				(name "Sheetfile")
+				(value "ButtonBox.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "dbfa0d96-63ad-43a8-b423-eaa959ac3ff3")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "J2")
+			(value "Connector")
+			(footprint "Piity:6Pin")
+			(description "Generic connector, single row, 01x06, script generated")
+			(fields
+				(field
+					(name "Footprint") "Piity:6Pin")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Generic connector, single row, 01x06, script generated")
+			)
+			(libsource
+				(lib "Connector")
+				(part "Conn_01x06_Socket")
+				(description "Generic connector, single row, 01x06, script generated")
+			)
+			(property
+				(name "Sheetname")
+				(value "ButtonBox")
+			)
+			(property
+				(name "Sheetfile")
+				(value "ButtonBox.kicad_sch")
+			)
+			(property
+				(name "ki_keywords")
+				(value "connector")
+			)
+			(property
+				(name "ki_fp_filters")
+				(value "Connector*:*_1x??_*")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "99550769-ee50-4c7c-8820-579341cb7a71")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+						(pin
+							(num "3")
+						)
+						(pin
+							(num "4")
+						)
+						(pin
+							(num "5")
+						)
+						(pin
+							(num "6")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "J3")
+			(value "Rotary Encoder")
+			(footprint "Piity:5PinRotary")
+			(description "Generic connector, single row, 01x05, script generated")
+			(fields
+				(field
+					(name "Footprint") "Piity:5PinRotary")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Generic connector, single row, 01x05, script generated")
+			)
+			(libsource
+				(lib "Connector")
+				(part "Conn_01x05_Socket")
+				(description "Generic connector, single row, 01x05, script generated")
+			)
+			(property
+				(name "Sheetname")
+				(value "ButtonBox")
+			)
+			(property
+				(name "Sheetfile")
+				(value "ButtonBox.kicad_sch")
+			)
+			(property
+				(name "ki_keywords")
+				(value "connector")
+			)
+			(property
+				(name "ki_fp_filters")
+				(value "Connector*:*_1x??_*")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "fa112c98-4284-4f59-84ce-903624a8b325")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+						(pin
+							(num "3")
+						)
+						(pin
+							(num "4")
+						)
+						(pin
+							(num "5")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "J4")
+			(value "Pause/Play")
+			(footprint "Piity:2PinKlick")
+			(description "Generic connector, single row, 01x02, script generated")
+			(fields
+				(field
+					(name "Footprint") "Piity:2PinKlick")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Generic connector, single row, 01x02, script generated")
+			)
+			(libsource
+				(lib "Connector")
+				(part "Conn_01x02_Socket")
+				(description "Generic connector, single row, 01x02, script generated")
+			)
+			(property
+				(name "Sheetname")
+				(value "ButtonBox")
+			)
+			(property
+				(name "Sheetfile")
+				(value "ButtonBox.kicad_sch")
+			)
+			(property
+				(name "ki_keywords")
+				(value "connector")
+			)
+			(property
+				(name "ki_fp_filters")
+				(value "Connector*:*_1x??_*")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "4b242098-8035-4636-a135-a9191c2bfbd7")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "J5")
+			(value "Shuffle")
+			(footprint "Piity:2PinKlick")
+			(description "Generic connector, single row, 01x02, script generated")
+			(fields
+				(field
+					(name "Footprint") "Piity:2PinKlick")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Generic connector, single row, 01x02, script generated")
+			)
+			(libsource
+				(lib "Connector")
+				(part "Conn_01x02_Socket")
+				(description "Generic connector, single row, 01x02, script generated")
+			)
+			(property
+				(name "Sheetname")
+				(value "ButtonBox")
+			)
+			(property
+				(name "Sheetfile")
+				(value "ButtonBox.kicad_sch")
+			)
+			(property
+				(name "ki_keywords")
+				(value "connector")
+			)
+			(property
+				(name "ki_fp_filters")
+				(value "Connector*:*_1x??_*")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "cb729981-2638-446a-8569-96519ad379ad")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "J6")
+			(value "Stop")
+			(footprint "Piity:2PinKlick")
+			(description "Generic connector, single row, 01x02, script generated")
+			(fields
+				(field
+					(name "Footprint") "Piity:2PinKlick")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Generic connector, single row, 01x02, script generated")
+			)
+			(libsource
+				(lib "Connector")
+				(part "Conn_01x02_Socket")
+				(description "Generic connector, single row, 01x02, script generated")
+			)
+			(property
+				(name "Sheetname")
+				(value "ButtonBox")
+			)
+			(property
+				(name "Sheetfile")
+				(value "ButtonBox.kicad_sch")
+			)
+			(property
+				(name "ki_keywords")
+				(value "connector")
+			)
+			(property
+				(name "ki_fp_filters")
+				(value "Connector*:*_1x??_*")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "4d321443-af9b-455e-a666-cf18992ca0d4")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "J7")
+			(value "Conn_02x04_Counter_Clockwise_MountingPin")
+			(footprint "Piity:8Pin")
+			(description "Generic connectable mounting pin connector, double row, 02x04, counter clockwise pin numbering scheme (similar to DIP package numbering), script generated (kicad-library-utils/schlib/autogen/connector/)")
+			(fields
+				(field
+					(name "Footprint") "Piity:8Pin")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Generic connectable mounting pin connector, double row, 02x04, counter clockwise pin numbering scheme (similar to DIP package numbering), script generated (kicad-library-utils/schlib/autogen/connector/)")
+			)
+			(libsource
+				(lib "Connector_Generic_MountingPin")
+				(part "Conn_02x04_Counter_Clockwise_MountingPin")
+				(description "Generic connectable mounting pin connector, double row, 02x04, counter clockwise pin numbering scheme (similar to DIP package numbering), script generated (kicad-library-utils/schlib/autogen/connector/)")
+			)
+			(property
+				(name "Sheetname")
+				(value "ButtonBox")
+			)
+			(property
+				(name "Sheetfile")
+				(value "ButtonBox.kicad_sch")
+			)
+			(property
+				(name "ki_keywords")
+				(value "connector")
+			)
+			(property
+				(name "ki_fp_filters")
+				(value "Connector*:*_2x??-1MP*")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "9eaef61e-d653-4f5a-a046-3feae4753476")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+						(pin
+							(num "3")
+						)
+						(pin
+							(num "4")
+						)
+						(pin
+							(num "MP")
+						)
+						(pin
+							(num "8")
+						)
+						(pin
+							(num "7")
+						)
+						(pin
+							(num "6")
+						)
+						(pin
+							(num "5")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "LED1")
+			(value "~")
+			(footprint "EasyEDA_Lib:LED-SMD_4P-L3.2-W2.8-LS5.9_SK6812MINI-E")
+			(datasheet "https://item.szlcsc.com/datasheet/SK6812MINI-E/5773397.html")
+			(description "Dominant Wavelength - R:620nm~625nm Dominant Wavelength - R:620nm~625nm Dominant Wavelength - G:515nm~525nm Dominant Wavelength - G:515nm~525nm Dominant Wavelength - B:460nm~470nm Dominant Wavelength - B:460nm~470nm Data Transmission Rate:800Kbit/s Voltag")
+			(fields
+				(field
+					(name "Manufacturer Part") "SK6812MINI-E")
+				(field
+					(name "Manufacturer") "欧思科光电")
+				(field
+					(name "Supplier Part") "C5149201")
+				(field
+					(name "Supplier") "LCSC")
+				(field
+					(name "LCSC Part Name") "工作电压5V、发光角度120°、灰度调节256级的RGB LED")
+				(field
+					(name "Footprint") "EasyEDA_Lib:LED-SMD_4P-L3.2-W2.8-LS5.9_SK6812MINI-E")
+				(field
+					(name "Datasheet") "https://item.szlcsc.com/datasheet/SK6812MINI-E/5773397.html")
+				(field
+					(name "Description") "Dominant Wavelength - R:620nm~625nm Dominant Wavelength - R:620nm~625nm Dominant Wavelength - G:515nm~525nm Dominant Wavelength - G:515nm~525nm Dominant Wavelength - B:460nm~470nm Dominant Wavelength - B:460nm~470nm Data Transmission Rate:800Kbit/s Voltag")
+			)
+			(libsource
+				(lib "EasyEDA_Lib")
+				(part "SK6812MINI-E_C5149201")
+				(description "Dominant Wavelength - R:620nm~625nm Dominant Wavelength - R:620nm~625nm Dominant Wavelength - G:515nm~525nm Dominant Wavelength - G:515nm~525nm Dominant Wavelength - B:460nm~470nm Dominant Wavelength - B:460nm~470nm Data Transmission Rate:800Kbit/s Voltag")
+			)
+			(property
+				(name "Manufacturer Part")
+				(value "SK6812MINI-E")
+			)
+			(property
+				(name "Manufacturer")
+				(value "欧思科光电")
+			)
+			(property
+				(name "Supplier Part")
+				(value "C5149201")
+			)
+			(property
+				(name "Supplier")
+				(value "LCSC")
+			)
+			(property
+				(name "LCSC Part Name")
+				(value "工作电压5V、发光角度120°、灰度调节256级的RGB LED")
+			)
+			(property
+				(name "Sheetname")
+				(value "ButtonBox")
+			)
+			(property
+				(name "Sheetfile")
+				(value "ButtonBox.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "5ff65dee-19e3-46dd-8d87-081f0ea29623")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+						(pin
+							(num "4")
+						)
+						(pin
+							(num "3")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "LED2")
+			(value "~")
+			(footprint "EasyEDA_Lib:LED-SMD_4P-L3.2-W2.8-LS5.9_SK6812MINI-E")
+			(datasheet "https://item.szlcsc.com/datasheet/SK6812MINI-E/5773397.html")
+			(description "Dominant Wavelength - R:620nm~625nm Dominant Wavelength - R:620nm~625nm Dominant Wavelength - G:515nm~525nm Dominant Wavelength - G:515nm~525nm Dominant Wavelength - B:460nm~470nm Dominant Wavelength - B:460nm~470nm Data Transmission Rate:800Kbit/s Voltag")
+			(fields
+				(field
+					(name "Manufacturer Part") "SK6812MINI-E")
+				(field
+					(name "Manufacturer") "欧思科光电")
+				(field
+					(name "Supplier Part") "C5149201")
+				(field
+					(name "Supplier") "LCSC")
+				(field
+					(name "LCSC Part Name") "工作电压5V、发光角度120°、灰度调节256级的RGB LED")
+				(field
+					(name "Footprint") "EasyEDA_Lib:LED-SMD_4P-L3.2-W2.8-LS5.9_SK6812MINI-E")
+				(field
+					(name "Datasheet") "https://item.szlcsc.com/datasheet/SK6812MINI-E/5773397.html")
+				(field
+					(name "Description") "Dominant Wavelength - R:620nm~625nm Dominant Wavelength - R:620nm~625nm Dominant Wavelength - G:515nm~525nm Dominant Wavelength - G:515nm~525nm Dominant Wavelength - B:460nm~470nm Dominant Wavelength - B:460nm~470nm Data Transmission Rate:800Kbit/s Voltag")
+			)
+			(libsource
+				(lib "EasyEDA_Lib")
+				(part "SK6812MINI-E_C5149201")
+				(description "Dominant Wavelength - R:620nm~625nm Dominant Wavelength - R:620nm~625nm Dominant Wavelength - G:515nm~525nm Dominant Wavelength - G:515nm~525nm Dominant Wavelength - B:460nm~470nm Dominant Wavelength - B:460nm~470nm Data Transmission Rate:800Kbit/s Voltag")
+			)
+			(property
+				(name "Manufacturer Part")
+				(value "SK6812MINI-E")
+			)
+			(property
+				(name "Manufacturer")
+				(value "欧思科光电")
+			)
+			(property
+				(name "Supplier Part")
+				(value "C5149201")
+			)
+			(property
+				(name "Supplier")
+				(value "LCSC")
+			)
+			(property
+				(name "LCSC Part Name")
+				(value "工作电压5V、发光角度120°、灰度调节256级的RGB LED")
+			)
+			(property
+				(name "Sheetname")
+				(value "ButtonBox")
+			)
+			(property
+				(name "Sheetfile")
+				(value "ButtonBox.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "db59c431-9f55-4d41-9d26-ac9fb10f5242")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+						(pin
+							(num "4")
+						)
+						(pin
+							(num "3")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "LED3")
+			(value "~")
+			(footprint "EasyEDA_Lib:LED-SMD_4P-L3.2-W2.8-LS5.9_SK6812MINI-E")
+			(datasheet "https://item.szlcsc.com/datasheet/SK6812MINI-E/5773397.html")
+			(description "Dominant Wavelength - R:620nm~625nm Dominant Wavelength - R:620nm~625nm Dominant Wavelength - G:515nm~525nm Dominant Wavelength - G:515nm~525nm Dominant Wavelength - B:460nm~470nm Dominant Wavelength - B:460nm~470nm Data Transmission Rate:800Kbit/s Voltag")
+			(fields
+				(field
+					(name "Manufacturer Part") "SK6812MINI-E")
+				(field
+					(name "Manufacturer") "欧思科光电")
+				(field
+					(name "Supplier Part") "C5149201")
+				(field
+					(name "Supplier") "LCSC")
+				(field
+					(name "LCSC Part Name") "工作电压5V、发光角度120°、灰度调节256级的RGB LED")
+				(field
+					(name "Footprint") "EasyEDA_Lib:LED-SMD_4P-L3.2-W2.8-LS5.9_SK6812MINI-E")
+				(field
+					(name "Datasheet") "https://item.szlcsc.com/datasheet/SK6812MINI-E/5773397.html")
+				(field
+					(name "Description") "Dominant Wavelength - R:620nm~625nm Dominant Wavelength - R:620nm~625nm Dominant Wavelength - G:515nm~525nm Dominant Wavelength - G:515nm~525nm Dominant Wavelength - B:460nm~470nm Dominant Wavelength - B:460nm~470nm Data Transmission Rate:800Kbit/s Voltag")
+			)
+			(libsource
+				(lib "EasyEDA_Lib")
+				(part "SK6812MINI-E_C5149201")
+				(description "Dominant Wavelength - R:620nm~625nm Dominant Wavelength - R:620nm~625nm Dominant Wavelength - G:515nm~525nm Dominant Wavelength - G:515nm~525nm Dominant Wavelength - B:460nm~470nm Dominant Wavelength - B:460nm~470nm Data Transmission Rate:800Kbit/s Voltag")
+			)
+			(property
+				(name "Manufacturer Part")
+				(value "SK6812MINI-E")
+			)
+			(property
+				(name "Manufacturer")
+				(value "欧思科光电")
+			)
+			(property
+				(name "Supplier Part")
+				(value "C5149201")
+			)
+			(property
+				(name "Supplier")
+				(value "LCSC")
+			)
+			(property
+				(name "LCSC Part Name")
+				(value "工作电压5V、发光角度120°、灰度调节256级的RGB LED")
+			)
+			(property
+				(name "Sheetname")
+				(value "ButtonBox")
+			)
+			(property
+				(name "Sheetfile")
+				(value "ButtonBox.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "1272ebf9-380b-4400-a8f2-10d82c0110b9")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+						(pin
+							(num "4")
+						)
+						(pin
+							(num "3")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "R1")
+			(value "5.1kΩ")
+			(footprint "EasyEDA_Lib:R0603")
+			(description "Type:Thick Film Resistor Resistance:5.1kΩ Tolerance:±1% Tolerance:±1% Power(Watts):100mW Voltage-Supply(Max):75V Temperature Coefficient:±100ppm/°C Temperature Coefficient:±100ppm/°C Operating Temperature:-55°C~+155°C Operating Temperature:-55°C~+155°C")
+			(fields
+				(field
+					(name "Manufacturer Part") "FRC0603F5101TS")
+				(field
+					(name "Manufacturer") "FOJAN(富捷)")
+				(field
+					(name "Supplier Part") "C2907044")
+				(field
+					(name "Supplier") "LCSC")
+				(field
+					(name "LCSC Part Name") "5.1kΩ ±1% 100mW 厚膜电阻")
+				(field
+					(name "Footprint") "EasyEDA_Lib:R0603")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Type:Thick Film Resistor Resistance:5.1kΩ Tolerance:±1% Tolerance:±1% Power(Watts):100mW Voltage-Supply(Max):75V Temperature Coefficient:±100ppm/°C Temperature Coefficient:±100ppm/°C Operating Temperature:-55°C~+155°C Operating Temperature:-55°C~+155°C")
+			)
+			(libsource
+				(lib "EasyEDA_Lib")
+				(part "FRC0603F5101TS")
+				(description "Type:Thick Film Resistor Resistance:5.1kΩ Tolerance:±1% Tolerance:±1% Power(Watts):100mW Voltage-Supply(Max):75V Temperature Coefficient:±100ppm/°C Temperature Coefficient:±100ppm/°C Operating Temperature:-55°C~+155°C Operating Temperature:-55°C~+155°C")
+			)
+			(property
+				(name "Manufacturer Part")
+				(value "FRC0603F5101TS")
+			)
+			(property
+				(name "Manufacturer")
+				(value "FOJAN(富捷)")
+			)
+			(property
+				(name "Supplier Part")
+				(value "C2907044")
+			)
+			(property
+				(name "Supplier")
+				(value "LCSC")
+			)
+			(property
+				(name "LCSC Part Name")
+				(value "5.1kΩ ±1% 100mW 厚膜电阻")
+			)
+			(property
+				(name "Sheetname")
+				(value "ButtonBox")
+			)
+			(property
+				(name "Sheetfile")
+				(value "ButtonBox.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "e148159d-6c42-4dc9-91e2-ae7e109b3125")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "R2")
+			(value "5.1kΩ")
+			(footprint "EasyEDA_Lib:R0603")
+			(description "Type:Thick Film Resistor Resistance:5.1kΩ Tolerance:±1% Tolerance:±1% Power(Watts):100mW Voltage-Supply(Max):75V Temperature Coefficient:±100ppm/°C Temperature Coefficient:±100ppm/°C Operating Temperature:-55°C~+155°C Operating Temperature:-55°C~+155°C")
+			(fields
+				(field
+					(name "Manufacturer Part") "FRC0603F5101TS")
+				(field
+					(name "Manufacturer") "FOJAN(富捷)")
+				(field
+					(name "Supplier Part") "C2907044")
+				(field
+					(name "Supplier") "LCSC")
+				(field
+					(name "LCSC Part Name") "5.1kΩ ±1% 100mW 厚膜电阻")
+				(field
+					(name "Footprint") "EasyEDA_Lib:R0603")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Type:Thick Film Resistor Resistance:5.1kΩ Tolerance:±1% Tolerance:±1% Power(Watts):100mW Voltage-Supply(Max):75V Temperature Coefficient:±100ppm/°C Temperature Coefficient:±100ppm/°C Operating Temperature:-55°C~+155°C Operating Temperature:-55°C~+155°C")
+			)
+			(libsource
+				(lib "EasyEDA_Lib")
+				(part "FRC0603F5101TS")
+				(description "Type:Thick Film Resistor Resistance:5.1kΩ Tolerance:±1% Tolerance:±1% Power(Watts):100mW Voltage-Supply(Max):75V Temperature Coefficient:±100ppm/°C Temperature Coefficient:±100ppm/°C Operating Temperature:-55°C~+155°C Operating Temperature:-55°C~+155°C")
+			)
+			(property
+				(name "Manufacturer Part")
+				(value "FRC0603F5101TS")
+			)
+			(property
+				(name "Manufacturer")
+				(value "FOJAN(富捷)")
+			)
+			(property
+				(name "Supplier Part")
+				(value "C2907044")
+			)
+			(property
+				(name "Supplier")
+				(value "LCSC")
+			)
+			(property
+				(name "LCSC Part Name")
+				(value "5.1kΩ ±1% 100mW 厚膜电阻")
+			)
+			(property
+				(name "Sheetname")
+				(value "ButtonBox")
+			)
+			(property
+				(name "Sheetfile")
+				(value "ButtonBox.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "e911738a-a192-43e8-9877-c067e56ffa6a")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "R3")
+			(value "5.1kΩ")
+			(footprint "EasyEDA_Lib:R0603")
+			(description "Type:Thick Film Resistor Resistance:5.1kΩ Tolerance:±1% Tolerance:±1% Power(Watts):100mW Voltage-Supply(Max):75V Temperature Coefficient:±100ppm/°C Temperature Coefficient:±100ppm/°C Operating Temperature:-55°C~+155°C Operating Temperature:-55°C~+155°C")
+			(fields
+				(field
+					(name "Manufacturer Part") "FRC0603F5101TS")
+				(field
+					(name "Manufacturer") "FOJAN(富捷)")
+				(field
+					(name "Supplier Part") "C2907044")
+				(field
+					(name "Supplier") "LCSC")
+				(field
+					(name "LCSC Part Name") "5.1kΩ ±1% 100mW 厚膜电阻")
+				(field
+					(name "Footprint") "EasyEDA_Lib:R0603")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Type:Thick Film Resistor Resistance:5.1kΩ Tolerance:±1% Tolerance:±1% Power(Watts):100mW Voltage-Supply(Max):75V Temperature Coefficient:±100ppm/°C Temperature Coefficient:±100ppm/°C Operating Temperature:-55°C~+155°C Operating Temperature:-55°C~+155°C")
+			)
+			(libsource
+				(lib "EasyEDA_Lib")
+				(part "FRC0603F5101TS")
+				(description "Type:Thick Film Resistor Resistance:5.1kΩ Tolerance:±1% Tolerance:±1% Power(Watts):100mW Voltage-Supply(Max):75V Temperature Coefficient:±100ppm/°C Temperature Coefficient:±100ppm/°C Operating Temperature:-55°C~+155°C Operating Temperature:-55°C~+155°C")
+			)
+			(property
+				(name "Manufacturer Part")
+				(value "FRC0603F5101TS")
+			)
+			(property
+				(name "Manufacturer")
+				(value "FOJAN(富捷)")
+			)
+			(property
+				(name "Supplier Part")
+				(value "C2907044")
+			)
+			(property
+				(name "Supplier")
+				(value "LCSC")
+			)
+			(property
+				(name "LCSC Part Name")
+				(value "5.1kΩ ±1% 100mW 厚膜电阻")
+			)
+			(property
+				(name "Sheetname")
+				(value "ButtonBox")
+			)
+			(property
+				(name "Sheetfile")
+				(value "ButtonBox.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "2d638de6-c17b-465b-aa43-4917211e9da3")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "R4")
+			(value "5.1kΩ")
+			(footprint "EasyEDA_Lib:R0603")
+			(description "Type:Thick Film Resistor Resistance:5.1kΩ Tolerance:±1% Tolerance:±1% Power(Watts):100mW Voltage-Supply(Max):75V Temperature Coefficient:±100ppm/°C Temperature Coefficient:±100ppm/°C Operating Temperature:-55°C~+155°C Operating Temperature:-55°C~+155°C")
+			(fields
+				(field
+					(name "Manufacturer Part") "FRC0603F5101TS")
+				(field
+					(name "Manufacturer") "FOJAN(富捷)")
+				(field
+					(name "Supplier Part") "C2907044")
+				(field
+					(name "Supplier") "LCSC")
+				(field
+					(name "LCSC Part Name") "5.1kΩ ±1% 100mW 厚膜电阻")
+				(field
+					(name "Footprint") "EasyEDA_Lib:R0603")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Type:Thick Film Resistor Resistance:5.1kΩ Tolerance:±1% Tolerance:±1% Power(Watts):100mW Voltage-Supply(Max):75V Temperature Coefficient:±100ppm/°C Temperature Coefficient:±100ppm/°C Operating Temperature:-55°C~+155°C Operating Temperature:-55°C~+155°C")
+			)
+			(libsource
+				(lib "EasyEDA_Lib")
+				(part "FRC0603F5101TS")
+				(description "Type:Thick Film Resistor Resistance:5.1kΩ Tolerance:±1% Tolerance:±1% Power(Watts):100mW Voltage-Supply(Max):75V Temperature Coefficient:±100ppm/°C Temperature Coefficient:±100ppm/°C Operating Temperature:-55°C~+155°C Operating Temperature:-55°C~+155°C")
+			)
+			(property
+				(name "Manufacturer Part")
+				(value "FRC0603F5101TS")
+			)
+			(property
+				(name "Manufacturer")
+				(value "FOJAN(富捷)")
+			)
+			(property
+				(name "Supplier Part")
+				(value "C2907044")
+			)
+			(property
+				(name "Supplier")
+				(value "LCSC")
+			)
+			(property
+				(name "LCSC Part Name")
+				(value "5.1kΩ ±1% 100mW 厚膜电阻")
+			)
+			(property
+				(name "Sheetname")
+				(value "ButtonBox")
+			)
+			(property
+				(name "Sheetfile")
+				(value "ButtonBox.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "a8a37e6b-66b4-4fac-b72a-79c97171e094")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "U1")
+			(value "~")
+			(footprint "EasyEDA_Lib:QFN-28_L4.0-W4.0-P0.40-BL-EP")
+			(datasheet "https://item.szlcsc.com/datasheet/SX1509BIULTRT/139715.html")
+			(description "Interface:I2C Interrupt Output:With Interrupt Output Output Type:- Voltage - Supply:1.425V~3.6V Voltage - Supply:1.425V~3.6V Current - Output Low(IOL):- Current - Output High(IOH):- Clock Frequency:400kHz Operating Temperature:-40°C~+85°C Operating Temperat")
+			(fields
+				(field
+					(name "Manufacturer Part") "SX1509BIULTRT")
+				(field
+					(name "Manufacturer") "SEMTECH")
+				(field
+					(name "Supplier Part") "C128430")
+				(field
+					(name "Supplier") "LCSC")
+				(field
+					(name "LCSC Part Name") "SX1509BIULTRT")
+				(field
+					(name "Footprint") "EasyEDA_Lib:QFN-28_L4.0-W4.0-P0.40-BL-EP")
+				(field
+					(name "Datasheet") "https://item.szlcsc.com/datasheet/SX1509BIULTRT/139715.html")
+				(field
+					(name "Description") "Interface:I2C Interrupt Output:With Interrupt Output Output Type:- Voltage - Supply:1.425V~3.6V Voltage - Supply:1.425V~3.6V Current - Output Low(IOL):- Current - Output High(IOH):- Clock Frequency:400kHz Operating Temperature:-40°C~+85°C Operating Temperat")
+			)
+			(libsource
+				(lib "EasyEDA_Lib")
+				(part "SX1509BIULTRT")
+				(description "Interface:I2C Interrupt Output:With Interrupt Output Output Type:- Voltage - Supply:1.425V~3.6V Voltage - Supply:1.425V~3.6V Current - Output Low(IOL):- Current - Output High(IOH):- Clock Frequency:400kHz Operating Temperature:-40°C~+85°C Operating Temperat")
+			)
+			(property
+				(name "Manufacturer Part")
+				(value "SX1509BIULTRT")
+			)
+			(property
+				(name "Manufacturer")
+				(value "SEMTECH")
+			)
+			(property
+				(name "Supplier Part")
+				(value "C128430")
+			)
+			(property
+				(name "Supplier")
+				(value "LCSC")
+			)
+			(property
+				(name "LCSC Part Name")
+				(value "SX1509BIULTRT")
+			)
+			(property
+				(name "Sheetname")
+				(value "ButtonBox")
+			)
+			(property
+				(name "Sheetfile")
+				(value "ButtonBox.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "b5496964-b268-42e7-9d6b-71129f29dd65")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+						(pin
+							(num "3")
+						)
+						(pin
+							(num "4")
+						)
+						(pin
+							(num "5")
+						)
+						(pin
+							(num "6")
+						)
+						(pin
+							(num "7")
+						)
+						(pin
+							(num "28")
+						)
+						(pin
+							(num "8")
+						)
+						(pin
+							(num "27")
+						)
+						(pin
+							(num "9")
+						)
+						(pin
+							(num "26")
+						)
+						(pin
+							(num "10")
+						)
+						(pin
+							(num "25")
+						)
+						(pin
+							(num "11")
+						)
+						(pin
+							(num "24")
+						)
+						(pin
+							(num "12")
+						)
+						(pin
+							(num "23")
+						)
+						(pin
+							(num "13")
+						)
+						(pin
+							(num "22")
+						)
+						(pin
+							(num "14")
+						)
+						(pin
+							(num "21")
+						)
+						(pin
+							(num "20")
+						)
+						(pin
+							(num "19")
+						)
+						(pin
+							(num "18")
+						)
+						(pin
+							(num "17")
+						)
+						(pin
+							(num "16")
+						)
+						(pin
+							(num "15")
+						)
+						(pin
+							(num "29")
+						)
+					)
+				)
+			)
+		)
+	)
+	(groups)
+	(variants)
+	(libparts
+		(libpart
+			(lib "Connector")
+			(part "Conn_01x02_Socket")
+			(description "Generic connector, single row, 01x02, script generated")
+			(footprints
+				(fp "Connector*:*_1x??_*")
+			)
+			(fields
+				(field
+					(name "Reference") "J")
+				(field
+					(name "Value") "Conn_01x02_Socket")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Generic connector, single row, 01x02, script generated")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "Pin_1")
+					(type "passive")
+				)
+				(pin
+					(num "2")
+					(name "Pin_2")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "Connector")
+			(part "Conn_01x05_Socket")
+			(description "Generic connector, single row, 01x05, script generated")
+			(footprints
+				(fp "Connector*:*_1x??_*")
+			)
+			(fields
+				(field
+					(name "Reference") "J")
+				(field
+					(name "Value") "Conn_01x05_Socket")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Generic connector, single row, 01x05, script generated")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "Pin_1")
+					(type "passive")
+				)
+				(pin
+					(num "2")
+					(name "Pin_2")
+					(type "passive")
+				)
+				(pin
+					(num "3")
+					(name "Pin_3")
+					(type "passive")
+				)
+				(pin
+					(num "4")
+					(name "Pin_4")
+					(type "passive")
+				)
+				(pin
+					(num "5")
+					(name "Pin_5")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "Connector")
+			(part "Conn_01x06_Socket")
+			(description "Generic connector, single row, 01x06, script generated")
+			(footprints
+				(fp "Connector*:*_1x??_*")
+			)
+			(fields
+				(field
+					(name "Reference") "J")
+				(field
+					(name "Value") "Conn_01x06_Socket")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Generic connector, single row, 01x06, script generated")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "Pin_1")
+					(type "passive")
+				)
+				(pin
+					(num "2")
+					(name "Pin_2")
+					(type "passive")
+				)
+				(pin
+					(num "3")
+					(name "Pin_3")
+					(type "passive")
+				)
+				(pin
+					(num "4")
+					(name "Pin_4")
+					(type "passive")
+				)
+				(pin
+					(num "5")
+					(name "Pin_5")
+					(type "passive")
+				)
+				(pin
+					(num "6")
+					(name "Pin_6")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "Connector_Generic_MountingPin")
+			(part "Conn_02x04_Counter_Clockwise_MountingPin")
+			(description "Generic connectable mounting pin connector, double row, 02x04, counter clockwise pin numbering scheme (similar to DIP package numbering), script generated (kicad-library-utils/schlib/autogen/connector/)")
+			(footprints
+				(fp "Connector*:*_2x??-1MP*")
+			)
+			(fields
+				(field
+					(name "Reference") "J")
+				(field
+					(name "Value") "Conn_02x04_Counter_Clockwise_MountingPin")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Generic connectable mounting pin connector, double row, 02x04, counter clockwise pin numbering scheme (similar to DIP package numbering), script generated (kicad-library-utils/schlib/autogen/connector/)")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "Pin_1")
+					(type "passive")
+				)
+				(pin
+					(num "2")
+					(name "Pin_2")
+					(type "passive")
+				)
+				(pin
+					(num "3")
+					(name "Pin_3")
+					(type "passive")
+				)
+				(pin
+					(num "4")
+					(name "Pin_4")
+					(type "passive")
+				)
+				(pin
+					(num "5")
+					(name "Pin_5")
+					(type "passive")
+				)
+				(pin
+					(num "6")
+					(name "Pin_6")
+					(type "passive")
+				)
+				(pin
+					(num "7")
+					(name "Pin_7")
+					(type "passive")
+				)
+				(pin
+					(num "8")
+					(name "Pin_8")
+					(type "passive")
+				)
+				(pin
+					(num "MP")
+					(name "MountPin")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "EasyEDA_Lib")
+			(part "CC0402KRX5R9BB104")
+			(description "Capacitance:100nF Tolerance:±10% Tolerance:±10% Voltage Rating:50V Temperature Coefficient:X5R")
+			(docs "https://item.szlcsc.com/datasheet/CC0402KRX5R9BB104/107097.html")
+			(fields
+				(field
+					(name "Reference") "C")
+				(field
+					(name "Value") "100nF")
+				(field
+					(name "Footprint") "EasyEDA_Lib:C0402")
+				(field
+					(name "Datasheet") "https://item.szlcsc.com/datasheet/CC0402KRX5R9BB104/107097.html")
+				(field
+					(name "Description") "Capacitance:100nF Tolerance:±10% Tolerance:±10% Voltage Rating:50V Temperature Coefficient:X5R")
+				(field
+					(name "Manufacturer Part") "CC0402KRX5R9BB104")
+				(field
+					(name "Manufacturer") "YAGEO(国巨)")
+				(field
+					(name "Supplier Part") "C105882")
+				(field
+					(name "Supplier") "LCSC")
+				(field
+					(name "LCSC Part Name") "100nF ±10% 50V")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "1")
+					(type "input")
+				)
+				(pin
+					(num "2")
+					(name "2")
+					(type "input")
+				)
+			)
+		)
+		(libpart
+			(lib "EasyEDA_Lib")
+			(part "FRC0603F5101TS")
+			(description "Type:Thick Film Resistor Resistance:5.1kΩ Tolerance:±1% Tolerance:±1% Power(Watts):100mW Voltage-Supply(Max):75V Temperature Coefficient:±100ppm/°C Temperature Coefficient:±100ppm/°C Operating Temperature:-55°C~+155°C Operating Temperature:-55°C~+155°C")
+			(fields
+				(field
+					(name "Reference") "R")
+				(field
+					(name "Value") "5.1kΩ")
+				(field
+					(name "Footprint") "EasyEDA_Lib:R0603")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Type:Thick Film Resistor Resistance:5.1kΩ Tolerance:±1% Tolerance:±1% Power(Watts):100mW Voltage-Supply(Max):75V Temperature Coefficient:±100ppm/°C Temperature Coefficient:±100ppm/°C Operating Temperature:-55°C~+155°C Operating Temperature:-55°C~+155°C")
+				(field
+					(name "Manufacturer Part") "FRC0603F5101TS")
+				(field
+					(name "Manufacturer") "FOJAN(富捷)")
+				(field
+					(name "Supplier Part") "C2907044")
+				(field
+					(name "Supplier") "LCSC")
+				(field
+					(name "LCSC Part Name") "5.1kΩ ±1% 100mW 厚膜电阻")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "1")
+					(type "unspecified")
+				)
+				(pin
+					(num "2")
+					(name "2")
+					(type "unspecified")
+				)
+			)
+		)
+		(libpart
+			(lib "EasyEDA_Lib")
+			(part "SK6812MINI-E_C5149201")
+			(description "Dominant Wavelength - R:620nm~625nm Dominant Wavelength - R:620nm~625nm Dominant Wavelength - G:515nm~525nm Dominant Wavelength - G:515nm~525nm Dominant Wavelength - B:460nm~470nm Dominant Wavelength - B:460nm~470nm Data Transmission Rate:800Kbit/s Voltag")
+			(docs "https://item.szlcsc.com/datasheet/SK6812MINI-E/5773397.html")
+			(fields
+				(field
+					(name "Reference") "LED")
+				(field
+					(name "Value")
+				)
+				(field
+					(name "Footprint") "EasyEDA_Lib:LED-SMD_4P-L3.2-W2.8-LS5.9_SK6812MINI-E")
+				(field
+					(name "Datasheet") "https://item.szlcsc.com/datasheet/SK6812MINI-E/5773397.html")
+				(field
+					(name "Description") "Dominant Wavelength - R:620nm~625nm Dominant Wavelength - R:620nm~625nm Dominant Wavelength - G:515nm~525nm Dominant Wavelength - G:515nm~525nm Dominant Wavelength - B:460nm~470nm Dominant Wavelength - B:460nm~470nm Data Transmission Rate:800Kbit/s Voltag")
+				(field
+					(name "Manufacturer Part") "SK6812MINI-E")
+				(field
+					(name "Manufacturer") "欧思科光电")
+				(field
+					(name "Supplier Part") "C5149201")
+				(field
+					(name "Supplier") "LCSC")
+				(field
+					(name "LCSC Part Name") "工作电压5V、发光角度120°、灰度调节256级的RGB LED")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "GND")
+					(type "unspecified")
+				)
+				(pin
+					(num "2")
+					(name "DIN")
+					(type "unspecified")
+				)
+				(pin
+					(num "3")
+					(name "VDD")
+					(type "unspecified")
+				)
+				(pin
+					(num "4")
+					(name "DOUT")
+					(type "unspecified")
+				)
+			)
+		)
+		(libpart
+			(lib "EasyEDA_Lib")
+			(part "SX1509BIULTRT")
+			(description "Interface:I2C Interrupt Output:With Interrupt Output Output Type:- Voltage - Supply:1.425V~3.6V Voltage - Supply:1.425V~3.6V Current - Output Low(IOL):- Current - Output High(IOH):- Clock Frequency:400kHz Operating Temperature:-40°C~+85°C Operating Temperat")
+			(docs "https://item.szlcsc.com/datasheet/SX1509BIULTRT/139715.html")
+			(fields
+				(field
+					(name "Reference") "U")
+				(field
+					(name "Value")
+				)
+				(field
+					(name "Footprint") "EasyEDA_Lib:QFN-28_L4.0-W4.0-P0.40-BL-EP")
+				(field
+					(name "Datasheet") "https://item.szlcsc.com/datasheet/SX1509BIULTRT/139715.html")
+				(field
+					(name "Description") "Interface:I2C Interrupt Output:With Interrupt Output Output Type:- Voltage - Supply:1.425V~3.6V Voltage - Supply:1.425V~3.6V Current - Output Low(IOL):- Current - Output High(IOH):- Clock Frequency:400kHz Operating Temperature:-40°C~+85°C Operating Temperat")
+				(field
+					(name "Manufacturer Part") "SX1509BIULTRT")
+				(field
+					(name "Manufacturer") "SEMTECH")
+				(field
+					(name "Supplier Part") "C128430")
+				(field
+					(name "Supplier") "LCSC")
+				(field
+					(name "LCSC Part Name") "SX1509BIULTRT")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "I/O[2]")
+					(type "unspecified")
+				)
+				(pin
+					(num "2")
+					(name "I/O[3]")
+					(type "unspecified")
+				)
+				(pin
+					(num "3")
+					(name "GND")
+					(type "unspecified")
+				)
+				(pin
+					(num "4")
+					(name "VCC1")
+					(type "unspecified")
+				)
+				(pin
+					(num "5")
+					(name "I/O[4]")
+					(type "unspecified")
+				)
+				(pin
+					(num "6")
+					(name "I/O[5]")
+					(type "unspecified")
+				)
+				(pin
+					(num "7")
+					(name "I/O[6]")
+					(type "unspecified")
+				)
+				(pin
+					(num "8")
+					(name "I/O[7]")
+					(type "unspecified")
+				)
+				(pin
+					(num "9")
+					(name "NINT")
+					(type "unspecified")
+				)
+				(pin
+					(num "10")
+					(name "ADDR1")
+					(type "unspecified")
+				)
+				(pin
+					(num "11")
+					(name "OSCIO")
+					(type "unspecified")
+				)
+				(pin
+					(num "12")
+					(name "VDDM")
+					(type "unspecified")
+				)
+				(pin
+					(num "13")
+					(name "I/O[8]")
+					(type "unspecified")
+				)
+				(pin
+					(num "14")
+					(name "I/O[9]")
+					(type "unspecified")
+				)
+				(pin
+					(num "15")
+					(name "I/O[10]")
+					(type "unspecified")
+				)
+				(pin
+					(num "16")
+					(name "I/O[11]")
+					(type "unspecified")
+				)
+				(pin
+					(num "17")
+					(name "GND")
+					(type "unspecified")
+				)
+				(pin
+					(num "18")
+					(name "VCC2")
+					(type "unspecified")
+				)
+				(pin
+					(num "19")
+					(name "I/O[12]")
+					(type "unspecified")
+				)
+				(pin
+					(num "20")
+					(name "I/O[13]")
+					(type "unspecified")
+				)
+				(pin
+					(num "21")
+					(name "I/O[14]")
+					(type "unspecified")
+				)
+				(pin
+					(num "22")
+					(name "I/O[15]")
+					(type "unspecified")
+				)
+				(pin
+					(num "23")
+					(name "NRESET")
+					(type "unspecified")
+				)
+				(pin
+					(num "24")
+					(name "SDA")
+					(type "unspecified")
+				)
+				(pin
+					(num "25")
+					(name "SCL")
+					(type "unspecified")
+				)
+				(pin
+					(num "26")
+					(name "ADDR0")
+					(type "unspecified")
+				)
+				(pin
+					(num "27")
+					(name "I/O[0]")
+					(type "unspecified")
+				)
+				(pin
+					(num "28")
+					(name "I/O[1]")
+					(type "unspecified")
+				)
+				(pin
+					(num "29")
+					(name "PAD")
+					(type "unspecified")
+				)
+			)
+		)
+	)
+	(libraries
+		(library
+			(logical "Connector")
+			(uri "${KICAD10_SYMBOL_DIR}/Connector.kicad_sym")
+		)
+		(library
+			(logical "Connector_Generic_MountingPin")
+			(uri "${KICAD10_SYMBOL_DIR}/Connector_Generic_MountingPin.kicad_sym")
+		)
+		(library
+			(logical "EasyEDA_Lib")
+			(uri "${KIPRJMOD}/EasyEDA_Lib/EasyEDA_Lib.elibz")
+		)
+	)
+	(nets
+		(net
+			(code "1")
+			(name "GND")
+			(class "Default")
+			(node
+				(ref "C1")
+				(pin "2")
+				(pinfunction "2_2")
+				(pintype "input")
+			)
+			(node
+				(ref "C2")
+				(pin "1")
+				(pinfunction "1_1")
+				(pintype "input")
+			)
+			(node
+				(ref "C3")
+				(pin "2")
+				(pinfunction "2_2")
+				(pintype "input")
+			)
+			(node
+				(ref "C4")
+				(pin "1")
+				(pinfunction "1_1")
+				(pintype "input")
+			)
+			(node
+				(ref "C5")
+				(pin "1")
+				(pinfunction "1_1")
+				(pintype "input")
+			)
+			(node
+				(ref "C6")
+				(pin "1")
+				(pinfunction "1_1")
+				(pintype "input")
+			)
+			(node
+				(ref "J2")
+				(pin "2")
+				(pinfunction "Pin_2_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "J3")
+				(pin "5")
+				(pinfunction "Pin_5_5")
+				(pintype "passive")
+			)
+			(node
+				(ref "J4")
+				(pin "1")
+				(pinfunction "Pin_1_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "J5")
+				(pin "1")
+				(pinfunction "Pin_1_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "J6")
+				(pin "1")
+				(pinfunction "Pin_1_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "LED1")
+				(pin "1")
+				(pinfunction "GND_1")
+				(pintype "unspecified")
+			)
+			(node
+				(ref "LED2")
+				(pin "1")
+				(pinfunction "GND_1")
+				(pintype "unspecified")
+			)
+			(node
+				(ref "LED3")
+				(pin "1")
+				(pinfunction "GND_1")
+				(pintype "unspecified")
+			)
+			(node
+				(ref "U1")
+				(pin "10")
+				(pinfunction "ADDR1_10")
+				(pintype "unspecified")
+			)
+			(node
+				(ref "U1")
+				(pin "17")
+				(pinfunction "GND_17")
+				(pintype "unspecified")
+			)
+			(node
+				(ref "U1")
+				(pin "26")
+				(pinfunction "ADDR0_26")
+				(pintype "unspecified")
+			)
+			(node
+				(ref "U1")
+				(pin "29")
+				(pinfunction "PAD_29")
+				(pintype "unspecified")
+			)
+			(node
+				(ref "U1")
+				(pin "3")
+				(pinfunction "GND_3")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "2")
+			(name "Net-(J2-Pin_1)")
+			(class "Default")
+			(node
+				(ref "C1")
+				(pin "1")
+				(pinfunction "1_1")
+				(pintype "input")
+			)
+			(node
+				(ref "C2")
+				(pin "2")
+				(pinfunction "2_2")
+				(pintype "input")
+			)
+			(node
+				(ref "C3")
+				(pin "1")
+				(pinfunction "1_1")
+				(pintype "input")
+			)
+			(node
+				(ref "J2")
+				(pin "1")
+				(pinfunction "Pin_1_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "J3")
+				(pin "4")
+				(pinfunction "Pin_4_4")
+				(pintype "passive")
+			)
+			(node
+				(ref "R1")
+				(pin "1")
+				(pinfunction "1_1")
+				(pintype "unspecified")
+			)
+			(node
+				(ref "R4")
+				(pin "2")
+				(pinfunction "2_2")
+				(pintype "unspecified")
+			)
+			(node
+				(ref "U1")
+				(pin "12")
+				(pinfunction "VDDM_12")
+				(pintype "unspecified")
+			)
+			(node
+				(ref "U1")
+				(pin "18")
+				(pinfunction "VCC2_18")
+				(pintype "unspecified")
+			)
+			(node
+				(ref "U1")
+				(pin "4")
+				(pinfunction "VCC1_4")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "3")
+			(name "Net-(J2-Pin_3)")
+			(class "Default")
+			(node
+				(ref "J2")
+				(pin "3")
+				(pinfunction "Pin_3_3")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "24")
+				(pinfunction "SDA_24")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "4")
+			(name "Net-(J2-Pin_4)")
+			(class "Default")
+			(node
+				(ref "J2")
+				(pin "4")
+				(pinfunction "Pin_4_4")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "25")
+				(pinfunction "SCL_25")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "5")
+			(name "Net-(J2-Pin_5)")
+			(class "Default")
+			(node
+				(ref "C4")
+				(pin "2")
+				(pinfunction "2_2")
+				(pintype "input")
+			)
+			(node
+				(ref "C5")
+				(pin "2")
+				(pinfunction "2_2")
+				(pintype "input")
+			)
+			(node
+				(ref "C6")
+				(pin "2")
+				(pinfunction "2_2")
+				(pintype "input")
+			)
+			(node
+				(ref "J2")
+				(pin "5")
+				(pinfunction "Pin_5_5")
+				(pintype "passive")
+			)
+			(node
+				(ref "LED1")
+				(pin "3")
+				(pinfunction "VDD_3")
+				(pintype "unspecified")
+			)
+			(node
+				(ref "LED2")
+				(pin "3")
+				(pinfunction "VDD_3")
+				(pintype "unspecified")
+			)
+			(node
+				(ref "LED3")
+				(pin "3")
+				(pinfunction "VDD_3")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "6")
+			(name "Net-(J2-Pin_6)")
+			(class "Default")
+			(node
+				(ref "J2")
+				(pin "6")
+				(pinfunction "Pin_6_6")
+				(pintype "passive")
+			)
+			(node
+				(ref "LED1")
+				(pin "2")
+				(pinfunction "DIN_2")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "7")
+			(name "Net-(J3-Pin_1)")
+			(class "Default")
+			(node
+				(ref "J3")
+				(pin "1")
+				(pinfunction "Pin_1_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "27")
+				(pinfunction "I/O[0]_27")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "8")
+			(name "Net-(J3-Pin_2)")
+			(class "Default")
+			(node
+				(ref "J3")
+				(pin "2")
+				(pinfunction "Pin_2_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "28")
+				(pinfunction "I/O[1]_28")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "9")
+			(name "Net-(J3-Pin_3)")
+			(class "Default")
+			(node
+				(ref "J3")
+				(pin "3")
+				(pinfunction "Pin_3_3")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "1")
+				(pinfunction "I/O[2]_1")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "10")
+			(name "Net-(J4-Pin_2)")
+			(class "Default")
+			(node
+				(ref "J4")
+				(pin "2")
+				(pinfunction "Pin_2_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "2")
+				(pinfunction "I/O[3]_2")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "11")
+			(name "Net-(J5-Pin_2)")
+			(class "Default")
+			(node
+				(ref "J5")
+				(pin "2")
+				(pinfunction "Pin_2_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "5")
+				(pinfunction "I/O[4]_5")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "12")
+			(name "Net-(J6-Pin_2)")
+			(class "Default")
+			(node
+				(ref "J6")
+				(pin "2")
+				(pinfunction "Pin_2_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "6")
+				(pinfunction "I/O[5]_6")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "13")
+			(name "Net-(J7-Pin_1)")
+			(class "Default")
+			(node
+				(ref "J7")
+				(pin "1")
+				(pinfunction "Pin_1_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "8")
+				(pinfunction "I/O[7]_8")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "14")
+			(name "Net-(J7-Pin_2)")
+			(class "Default")
+			(node
+				(ref "J7")
+				(pin "2")
+				(pinfunction "Pin_2_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "13")
+				(pinfunction "I/O[8]_13")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "15")
+			(name "Net-(J7-Pin_3)")
+			(class "Default")
+			(node
+				(ref "J7")
+				(pin "3")
+				(pinfunction "Pin_3_3")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "14")
+				(pinfunction "I/O[9]_14")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "16")
+			(name "Net-(J7-Pin_4)")
+			(class "Default")
+			(node
+				(ref "J7")
+				(pin "4")
+				(pinfunction "Pin_4_4")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "15")
+				(pinfunction "I/O[10]_15")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "17")
+			(name "Net-(J7-Pin_5)")
+			(class "Default")
+			(node
+				(ref "J7")
+				(pin "5")
+				(pinfunction "Pin_5_5")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "16")
+				(pinfunction "I/O[11]_16")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "18")
+			(name "Net-(J7-Pin_6)")
+			(class "Default")
+			(node
+				(ref "J7")
+				(pin "6")
+				(pinfunction "Pin_6_6")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "19")
+				(pinfunction "I/O[12]_19")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "19")
+			(name "Net-(J7-Pin_7)")
+			(class "Default")
+			(node
+				(ref "J7")
+				(pin "7")
+				(pinfunction "Pin_7_7")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "20")
+				(pinfunction "I/O[13]_20")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "20")
+			(name "Net-(J7-Pin_8)")
+			(class "Default")
+			(node
+				(ref "J7")
+				(pin "8")
+				(pinfunction "Pin_8_8")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "21")
+				(pinfunction "I/O[14]_21")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "21")
+			(name "Net-(LED1-DOUT)")
+			(class "Default")
+			(node
+				(ref "LED1")
+				(pin "4")
+				(pinfunction "DOUT_4")
+				(pintype "unspecified")
+			)
+			(node
+				(ref "LED2")
+				(pin "2")
+				(pinfunction "DIN_2")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "22")
+			(name "Net-(LED2-DOUT)")
+			(class "Default")
+			(node
+				(ref "LED2")
+				(pin "4")
+				(pinfunction "DOUT_4")
+				(pintype "unspecified")
+			)
+			(node
+				(ref "LED3")
+				(pin "2")
+				(pinfunction "DIN_2")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "23")
+			(name "Net-(R1-Pad2)")
+			(class "Default")
+			(node
+				(ref "R1")
+				(pin "2")
+				(pinfunction "2_2")
+				(pintype "unspecified")
+			)
+			(node
+				(ref "R2")
+				(pin "2")
+				(pinfunction "2_2")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "24")
+			(name "Net-(R3-Pad2)")
+			(class "Default")
+			(node
+				(ref "R3")
+				(pin "2")
+				(pinfunction "2_2")
+				(pintype "unspecified")
+			)
+			(node
+				(ref "R4")
+				(pin "1")
+				(pinfunction "1_1")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "25")
+			(name "Net-(U1-NINT)")
+			(class "Default")
+			(node
+				(ref "R3")
+				(pin "1")
+				(pinfunction "1_1")
+				(pintype "unspecified")
+			)
+			(node
+				(ref "U1")
+				(pin "9")
+				(pinfunction "NINT_9")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "26")
+			(name "Net-(U1-NRESET)")
+			(class "Default")
+			(node
+				(ref "R2")
+				(pin "1")
+				(pinfunction "1_1")
+				(pintype "unspecified")
+			)
+			(node
+				(ref "U1")
+				(pin "23")
+				(pinfunction "NRESET_23")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "27")
+			(name "unconnected-(J7-MountPin-PadMP)")
+			(class "Default")
+			(node
+				(ref "J7")
+				(pin "MP")
+				(pinfunction "MountPin_MP")
+				(pintype "passive")
+			)
+		)
+		(net
+			(code "28")
+			(name "unconnected-(LED3-DOUT-Pad4)")
+			(class "Default")
+			(node
+				(ref "LED3")
+				(pin "4")
+				(pinfunction "DOUT_4")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "29")
+			(name "unconnected-(U1-I{slash}O[6]-Pad7)")
+			(class "Default")
+			(node
+				(ref "U1")
+				(pin "7")
+				(pinfunction "I/O[6]_7")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "30")
+			(name "unconnected-(U1-I{slash}O[15]-Pad22)")
+			(class "Default")
+			(node
+				(ref "U1")
+				(pin "22")
+				(pinfunction "I/O[15]_22")
+				(pintype "unspecified")
+			)
+		)
+		(net
+			(code "31")
+			(name "unconnected-(U1-OSCIO-Pad11)")
+			(class "Default")
+			(node
+				(ref "U1")
+				(pin "11")
+				(pinfunction "OSCIO_11")
+				(pintype "unspecified")
+			)
+		)
+	)
+)
