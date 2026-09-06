@@ -535,11 +535,14 @@
   },
   "pcbnew": {
     "last_paths": {
+      "gencad": "",
       "idf": "",
       "netlist": "",
       "plot": "../Fabrication Main/",
+      "pos_files": "",
       "specctra_dsn": "",
       "step": "Projekt 1.step",
+      "svg": "",
       "vrml": ""
     },
     "page_layout_descr_file": ""
@@ -736,7 +739,7 @@
         "uuid": "bb383bd3-299b-4699-ae17-a9d02f181d7f"
       }
     ],
-    "used_designators": "Module1,CARD1,CN1,Visualizer1,D1,#PWR1,Q1,AUDIO1,Battery1,C1-27,U1-7,USBC1,R1-16,LED1-6,RundesDisplay1,4PinfuerBoard1,L1-2,J1-2",
+    "used_designators": "Module1,CARD1,CN1,Q1,Visualizer1,AUDIO1,D1,#PWR1,Battery1,C1-27,U1-7,RundesDisplay1,USBC1,R1-16,LED1-6,4PinfuerBoard1,L1-2,J1-2",
     "variants": []
   },
   "sheets": [
