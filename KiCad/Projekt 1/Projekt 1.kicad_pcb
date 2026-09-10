@@ -8042,7 +8042,7 @@
 			)
 		)
 		(property "Value" "100kΩ"
-			(at 0 1.43675 0)
+			(at -4.0465 1.43675 0)
 			(layer "F.Fab")
 			(uuid "838afb86-e004-43b3-8ec0-374b5b3aa401")
 			(effects
@@ -29760,7 +29760,7 @@
 		(property "Reference" "Module1"
 			(at 0.014966 -2.865 90)
 			(layer "F.SilkS")
-			(uuid "bf5636fb-94ad-4253-8b67-5204c7a8a13c")
+			(uuid "acd510dd-6a21-4250-818b-81e12b573255")
 			(effects
 				(font
 					(size 1 1)
@@ -29771,7 +29771,7 @@
 		(property "Value" "ComputeModule4-CM4"
 			(at 0.014966 2.865 90)
 			(layer "F.Fab")
-			(uuid "ff1d79ea-ac95-4158-bca4-3c81b4273876")
+			(uuid "8fa09ccf-e30a-423d-be0c-e15212ddf9c0")
 			(effects
 				(font
 					(size 1 1)
@@ -29783,7 +29783,7 @@
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "3e126ad2-abcd-4d66-bcd5-8d35cc0055f6")
+			(uuid "ac58249e-4070-4981-a58f-738db21fe7ca")
 			(effects
 				(font
 					(size 1 1)
@@ -29795,7 +29795,7 @@
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "70dab9b7-2296-452c-b157-14bb0d223769")
+			(uuid "6e0037a2-358e-45a5-a8f6-5383344a722e")
 			(effects
 				(font
 					(size 1 1)

@@ -1,8 +1,8 @@
 (export
 	(version "E")
 	(design
-		(source "/Users/pertificatus/Downloads/ButtonBox/ButtonBox.kicad_sch")
-		(date "2026-08-17T23:27:24")
+		(source "C:\\Users\\Per Kenner\\Documents\\GitHub\\MP3-Player\\KiCad\\Projekt 1\\ButtonBox\\ButtonBox.kicad_sch")
+		(date "2026-09-09T13:51:28")
 		(tool "Eeschema 10.0.5")
 		(sheet
 			(number "1")
