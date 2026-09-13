@@ -1,0 +1,14 @@
+[Unit]
+Description=Mini-Musikplayer UI (front display, buttons, power button)
+After=gpio9-pullup.service
+Wants=gpio9-pullup.service
+
+[Service]
+User=pkenner
+WorkingDirectory=/home/pkenner/mp3player
+ExecStart=/usr/bin/python3 main.py
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

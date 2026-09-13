@@ -1,0 +1,14 @@
+[Unit]
+Description=Mini-Musikplayer adaptive charge-current control (RT9466 + MAX17048)
+After=multi-user.target
+
+[Service]
+User=pkenner
+WorkingDirectory=/home/pkenner/mp3player
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 charge_control.py
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,9 @@
+# Secrets / local runtime state - never commit these
+Software/youtube_credentials.json
+Software/youtube_token.json
+Software/youtube_cookies.txt
+Software/settings.json
+
+# Python build artifacts
+__pycache__/
+*.pyc
