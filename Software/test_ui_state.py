@@ -283,6 +283,32 @@ def test_playlist_manage_delete_requires_confirmation():
     assert s.screen == ui_state.SCREEN_PLAYLIST_MANAGE_DETAIL, "must not navigate away without a second press"
 
 
+def test_status_ring_visible_depends_on_setting_and_screen():
+    s = make_state()
+    s.settings.set("display", "status_ring", "home")
+    s.screen = ui_state.SCREEN_HOME
+    assert s.status_ring_visible()
+    s.screen = ui_state.SCREEN_LIBRARY
+    assert not s.status_ring_visible()
+
+    s.settings.set("display", "status_ring", "always")
+    assert s.status_ring_visible()
+    s.screen = ui_state.SCREEN_HOME
+    assert s.status_ring_visible()
+
+
+def test_status_ring_setting_cycles_via_settings_detail():
+    s = make_state()
+    s.settings.set("display", "status_ring", "home")
+    s.settings_category = "display"
+    idx = next(i for i, it in enumerate(ui_state.SETTINGS_ITEMS["display"]) if it["key"] == "status_ring")
+    s.settings_detail_sel = idx
+    s.settings_detail_activate()
+    assert s.settings.get("display", "status_ring") == "always"
+    s.settings_detail_activate()
+    assert s.settings.get("display", "status_ring") == "home"
+
+
 if __name__ == "__main__":
     tests = [v for k, v in list(globals().items()) if k.startswith("test_")]
     for t in tests:

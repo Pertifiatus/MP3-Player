@@ -112,6 +112,8 @@ SETTINGS_ITEMS = {
         {"key": "ui_scale", "label": "UI-Groesse", "type": "stepper", "min": 1, "max": 5},
         {"key": "auto_sleep_s", "label": "Auto-Aus", "type": "choice",
          "choices": [(0, "Nie"), (15, "15s"), (30, "30s"), (60, "60s"), (120, "2min")]},
+        {"key": "status_ring", "label": "Statusanzeige", "type": "choice",
+         "choices": [("home", "Nur Home"), ("always", "Ueberall")]},
     ],
     "led": [
         {"key": "enabled", "label": "LED an", "type": "toggle"},
@@ -280,6 +282,9 @@ class UIState:
         actual_bt = connectivity.bluetooth_is_enabled()
         if actual_bt is not None:
             self.settings.set("connectivity", "bluetooth", actual_bt)
+
+    def status_ring_visible(self):
+        return self.settings.get("display", "status_ring") == "always" or self.screen == SCREEN_HOME
 
     # --- home --------------------------------------------------------------
     def home_items(self):
