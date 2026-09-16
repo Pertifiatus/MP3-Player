@@ -191,6 +191,25 @@ class BTWorker:
         self.state.bt_device_action_done(success, error)
 
 
+class StatusWorker:
+    """Polls WLAN/BT "connected" status in a background thread - connectivity.py's
+    own docstrings warn these shell out to nmcli/bluetoothctl (D-Bus round trips,
+    wifi_known_connections() alone makes one extra nmcli call per saved profile),
+    too slow to call from the render loop (same reasoning as SyncWorker/BTWorker
+    above - this project has already been bitten by exactly this class of bug,
+    see PlaybackSync's docstring)."""
+
+    def __init__(self, state):
+        self.state = state
+        threading.Thread(target=self._loop, daemon=True).start()
+
+    def _loop(self):
+        while True:
+            self.state.wifi_connected = any(n["connected"] for n in connectivity.wifi_known_connections())
+            self.state.bt_connected = any(d["connected"] for d in connectivity.bluetooth_known_devices())
+            time.sleep(STATUS_POLL_INTERVAL)
+
+
 class WifiWorker:
     """Runs WiFi scan/connect in a background thread - same reasoning as BTWorker."""
 
@@ -526,6 +545,7 @@ def main():
     worker = SyncWorker(state)
     bt_worker = BTWorker(state)
     wifi_worker = WifiWorker(state)
+    status_worker = StatusWorker(state)
     playback = PlaybackSync(player.AudioPlayer())
     screen_off = False
     led_enabled_before_off = None
@@ -545,13 +565,14 @@ def main():
     sink.push(ui_render.render(state))
     last_playing_redraw = time.monotonic()
     last_motion_poll = time.monotonic()
-    last_battery_poll = time.monotonic()
-    last_status_poll = time.monotonic()
+    last_battery_poll = time.monotonic() - BATTERY_POLL_INTERVAL  # fire on the first iteration, not after a full interval
     last_bt_redraw = time.monotonic()
     last_wifi_redraw = time.monotonic()
     last_wifi_rescan = time.monotonic()
     last_sync_redraw = time.monotonic()
     last_rendered_screen = state.screen
+    last_seen_wifi_connected = state.wifi_connected
+    last_seen_bt_connected = state.bt_connected
     knob_held = False
     knob_rotated_while_held = False
 
@@ -636,15 +657,14 @@ def main():
                 if state.status_ring_visible():
                     dirty = True
 
-        if now - last_status_poll >= STATUS_POLL_INTERVAL:
-            last_status_poll = now
-            new_wifi_connected = any(n["connected"] for n in connectivity.wifi_known_connections())
-            new_bt_connected = any(d["connected"] for d in connectivity.bluetooth_known_devices())
-            if new_wifi_connected != state.wifi_connected or new_bt_connected != state.bt_connected:
-                state.wifi_connected = new_wifi_connected
-                state.bt_connected = new_bt_connected
-                if state.status_ring_visible():
-                    dirty = True
+        # StatusWorker (background thread) owns the actual nmcli/bluetoothctl polling -
+        # this is just noticing when it changed something, so the ring redraws
+        # promptly instead of waiting for some unrelated redraw to catch up.
+        if state.wifi_connected != last_seen_wifi_connected or state.bt_connected != last_seen_bt_connected:
+            last_seen_wifi_connected = state.wifi_connected
+            last_seen_bt_connected = state.bt_connected
+            if state.status_ring_visible():
+                dirty = True
 
         # Not gated on bt_scanning/bt_pair_status: the exact moment scanning ends
         # but pairing hasn't started (list is ready, waiting for the user to pick

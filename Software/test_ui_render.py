@@ -220,13 +220,18 @@ def test_status_ring_renders_without_crashing():
                 s.settings.set("connectivity", "bluetooth", bt_on)
 
                 s.settings.set("display", "status_ring", "home")
-                _assert_frame(ui_render.render(s))  # SCREEN_HOME - ring drawn
+                home_render = ui_render.render(s)
+                _assert_frame(home_render)  # SCREEN_HOME - ring drawn
 
                 s.screen = ui_state.SCREEN_LIBRARY
-                _assert_frame(ui_render.render(s))  # "home" mode, not home - ring skipped
+                lib_without_ring = ui_render.render(s)
+                _assert_frame(lib_without_ring)  # "home" mode, not home - ring skipped
 
                 s.settings.set("display", "status_ring", "always")
-                _assert_frame(ui_render.render(s))  # "always" mode - ring drawn on library too
+                lib_with_ring = ui_render.render(s)
+                _assert_frame(lib_with_ring)  # "always" mode - ring drawn on library too
+                assert lib_with_ring.tobytes() != lib_without_ring.tobytes(), \
+                    "ring should be drawn in 'always' mode but not 'home' mode on a non-home screen"
 
 
 if __name__ == "__main__":

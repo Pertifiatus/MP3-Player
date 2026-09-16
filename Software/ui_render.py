@@ -158,12 +158,15 @@ def _ring_point(deg, r=RING_R):
 def _draw_status_dot(draw, deg, color, on, connected):
     x, y = _ring_point(deg)
     box = [x - DOT_R, y - DOT_R, x + DOT_R, y + DOT_R]
-    if connected:
-        draw.ellipse(box, fill=color)
-    elif on:
-        draw.ellipse(box, outline=color, width=2)
-    else:
+    # "off" must win immediately even if `connected` is a stale background-polled
+    # True (StatusWorker only refreshes every ~10s) - otherwise flipping the
+    # radio off in Settings can leave the dot looking "connected" for up to 10s.
+    if not on:
         draw.ellipse(box, fill=RING_OFF)
+    elif connected:
+        draw.ellipse(box, fill=color)
+    else:
+        draw.ellipse(box, outline=color, width=2)
 
 
 def _draw_status_ring(draw, state):
@@ -176,7 +179,8 @@ def _draw_status_ring(draw, state):
     draw.arc(bbox, RING_START_DEG, RING_END_DEG, fill=RING_TRACK, width=RING_WIDTH)
     for deg in (RING_START_DEG, RING_END_DEG):
         x, y = _ring_point(deg)
-        draw.ellipse([x - DOT_R, y - DOT_R, x + DOT_R, y + DOT_R], fill=RING_TRACK)
+        cap_r = RING_WIDTH / 2
+        draw.ellipse([x - cap_r, y - cap_r, x + cap_r, y + cap_r], fill=RING_TRACK)
 
     if state.battery_pct is not None:
         pct = max(0, min(100, round(state.battery_pct)))
@@ -185,12 +189,16 @@ def _draw_status_ring(draw, state):
             draw.arc(bbox, RING_START_DEG, fill_end, fill=ACCENT, width=RING_WIDTH)
             for deg in (RING_START_DEG, fill_end):
                 x, y = _ring_point(deg)
-                draw.ellipse([x - DOT_R, y - DOT_R, x + DOT_R, y + DOT_R], fill=ACCENT)
-        # anchored inward (r=85, well inside SAFE_R) so it can never land outside
-        # the physical bezel regardless of font metrics - exact position vs. the
-        # Home header may still need live tuning, see the spec's known-follow-up note
-        text_x, text_y = _ring_point(RING_START_DEG, r=85)
-        _text_centered(draw, text_x, text_y, f"{pct}%", _font("ring_pct", 1.0), DIM)
+                cap_r = RING_WIDTH / 2
+                draw.ellipse([x - cap_r, y - cap_r, x + cap_r, y + cap_r], fill=ACCENT)
+        # r=85 sits inside SAFE_R (104), unlike the arc/dots above which stay
+        # outside it - that's why this label is additionally restricted to
+        # Home-at-rest (home_sel == 0) below: drawing it on any other screen,
+        # or a scrolled Home list, would paint over that screen's own content
+        # (the Now-Playing disc, nav-list row text, etc).
+        if state.screen == ui_state.SCREEN_HOME and state.home_sel == 0:
+            text_x, text_y = _ring_point(RING_START_DEG, r=85)
+            _text_centered(draw, text_x, text_y, f"{pct}%", _font("ring_pct", 1.0), DIM)
 
     _draw_status_dot(draw, WIFI_DOT_DEG, TEXT, state.settings.get("connectivity", "wifi"), state.wifi_connected)
     _draw_status_dot(draw, BT_DOT_DEG, CATEGORY_COLORS["connectivity"],
