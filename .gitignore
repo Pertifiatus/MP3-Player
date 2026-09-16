@@ -7,3 +7,6 @@ Software/settings.json
 # Python build artifacts
 __pycache__/
 *.pyc
+
+# superpowers:brainstorming visual-companion scratch files
+.superpowers/
