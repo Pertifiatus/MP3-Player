@@ -208,6 +208,27 @@ def test_all_screens_render_at_every_scale():
         _assert_frame(ui_render.render_shutdown())
 
 
+def test_status_ring_renders_without_crashing():
+    for battery_pct in (None, 0, 1, 50, 100, 104):  # 104: gauge over-reads slightly past 100, see max17048.py
+        for wifi_on, wifi_connected in ((False, False), (True, False), (True, True)):
+            for bt_on, bt_connected in ((False, False), (True, False), (True, True)):
+                s = make_state()
+                s.battery_pct = battery_pct
+                s.wifi_connected = wifi_connected
+                s.bt_connected = bt_connected
+                s.settings.set("connectivity", "wifi", wifi_on)
+                s.settings.set("connectivity", "bluetooth", bt_on)
+
+                s.settings.set("display", "status_ring", "home")
+                _assert_frame(ui_render.render(s))  # SCREEN_HOME - ring drawn
+
+                s.screen = ui_state.SCREEN_LIBRARY
+                _assert_frame(ui_render.render(s))  # "home" mode, not home - ring skipped
+
+                s.settings.set("display", "status_ring", "always")
+                _assert_frame(ui_render.render(s))  # "always" mode - ring drawn on library too
+
+
 if __name__ == "__main__":
     tests = [v for k, v in list(globals().items()) if k.startswith("test_")]
     for t in tests:

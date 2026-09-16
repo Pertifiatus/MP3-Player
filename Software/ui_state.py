@@ -222,6 +222,9 @@ class UIState:
         self.last_played = None  # (playlist_idx, track_idx)
         self.shuffle = False
         self.imu = None  # set by main.py after QMI8658() succeeds, else stays None
+        self.battery_pct = None  # 0-100 or None (gauge unavailable/not yet read); set by main.py from MAX17048
+        self.wifi_connected = False  # set by main.py from connectivity.wifi_known_connections()
+        self.bt_connected = False  # set by main.py from connectivity.bluetooth_known_devices()
 
         self.settings_root_sel = 0
         self.settings_category = None

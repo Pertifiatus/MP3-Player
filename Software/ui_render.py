@@ -55,6 +55,7 @@ FONT_FILES = {
     "sub_l": (FONT_DIR + "DejaVuSans.ttf", 14),
     "sub_s": (FONT_DIR + "DejaVuSans.ttf", 12),
     "header": (FONT_DIR + "DejaVuSans-Bold.ttf", 13),
+    "ring_pct": (FONT_DIR + "DejaVuSans-Bold.ttf", 11),
     "icon_l": (FONT_DIR + "DejaVuSans-Bold.ttf", 30),
     "icon_s": (FONT_DIR + "DejaVuSans-Bold.ttf", 22),
     "label_title": (FONT_DIR + "DejaVuSans-Bold.ttf", 13),
@@ -129,6 +130,71 @@ def _safe_half_width(y, r=SAFE_R, cy=W / 2):
 # number that could drift out of sync with it.
 _MIN_CARD_HALF_W = 50
 CARD_MAX_Y = W / 2 + (SAFE_R ** 2 - _MIN_CARD_HALF_W ** 2) ** 0.5
+
+
+# --- status ring (battery + WLAN/BT) -----------------------------------------
+# Fixed hardware-margin element, like SAFE_R - does NOT scale with ui_scale.
+# Sits between SAFE_R (104) and the physical bezel (r=120): outer edge at
+# RING_R + RING_WIDTH/2 = 116, ~4px from the true edge; inner edge at
+# RING_R - RING_WIDTH/2 = 104, flush with SAFE_R. See
+# docs/superpowers/specs/2026-09-16-status-ring-design.md for the layout this
+# was tuned against.
+RING_R = 110
+RING_WIDTH = 12
+RING_START_DEG = -55
+RING_END_DEG = 30
+WIFI_DOT_DEG = 38
+BT_DOT_DEG = 46
+DOT_R = 6
+RING_TRACK = (58, 58, 60)
+RING_OFF = (72, 72, 76)  # matches _draw_toggle_pill's "off" fill
+
+
+def _ring_point(deg, r=RING_R):
+    rad = math.radians(deg)
+    return (W / 2 + r * math.cos(rad), W / 2 + r * math.sin(rad))
+
+
+def _draw_status_dot(draw, deg, color, on, connected):
+    x, y = _ring_point(deg)
+    box = [x - DOT_R, y - DOT_R, x + DOT_R, y + DOT_R]
+    if connected:
+        draw.ellipse(box, fill=color)
+    elif on:
+        draw.ellipse(box, outline=color, width=2)
+    else:
+        draw.ellipse(box, fill=RING_OFF)
+
+
+def _draw_status_ring(draw, state):
+    bbox = [W / 2 - RING_R, W / 2 - RING_R, W / 2 + RING_R, W / 2 + RING_R]
+
+    # track (empty slot), rounded ends - PIL's arc() has flat ends, so the caps
+    # are faked with small filled circles at both endpoints (a stroke-linecap
+    # of "round" is exactly a semicircle of radius=width/2 at the endpoint;
+    # a full circle there looks identical since the arc itself covers the rest)
+    draw.arc(bbox, RING_START_DEG, RING_END_DEG, fill=RING_TRACK, width=RING_WIDTH)
+    for deg in (RING_START_DEG, RING_END_DEG):
+        x, y = _ring_point(deg)
+        draw.ellipse([x - DOT_R, y - DOT_R, x + DOT_R, y + DOT_R], fill=RING_TRACK)
+
+    if state.battery_pct is not None:
+        pct = max(0, min(100, round(state.battery_pct)))
+        if pct > 0:
+            fill_end = RING_START_DEG + (RING_END_DEG - RING_START_DEG) * pct / 100
+            draw.arc(bbox, RING_START_DEG, fill_end, fill=ACCENT, width=RING_WIDTH)
+            for deg in (RING_START_DEG, fill_end):
+                x, y = _ring_point(deg)
+                draw.ellipse([x - DOT_R, y - DOT_R, x + DOT_R, y + DOT_R], fill=ACCENT)
+        # anchored inward (r=85, well inside SAFE_R) so it can never land outside
+        # the physical bezel regardless of font metrics - exact position vs. the
+        # Home header may still need live tuning, see the spec's known-follow-up note
+        text_x, text_y = _ring_point(RING_START_DEG, r=85)
+        _text_centered(draw, text_x, text_y, f"{pct}%", _font("ring_pct", 1.0), DIM)
+
+    _draw_status_dot(draw, WIFI_DOT_DEG, TEXT, state.settings.get("connectivity", "wifi"), state.wifi_connected)
+    _draw_status_dot(draw, BT_DOT_DEG, CATEGORY_COLORS["connectivity"],
+                      state.settings.get("connectivity", "bluetooth"), state.bt_connected)
 
 
 def _header(draw, y, text, font, fill):
@@ -1094,4 +1160,7 @@ def render_shutdown() -> Image.Image:
 
 
 def render(state: ui_state.UIState) -> Image.Image:
-    return _RENDERERS[state.screen](state)
+    img = _RENDERERS[state.screen](state)
+    if state.status_ring_visible():
+        _draw_status_ring(ImageDraw.Draw(img), state)
+    return img
