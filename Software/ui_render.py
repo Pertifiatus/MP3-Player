@@ -169,14 +169,31 @@ def _draw_status_dot(draw, deg, color, on, connected):
         draw.ellipse(box, outline=color, width=2)
 
 
-def _draw_status_ring(draw, state):
-    bbox = [W / 2 - RING_R, W / 2 - RING_R, W / 2 + RING_R, W / 2 + RING_R]
+def _draw_ring_arc(img, start_deg, end_deg, color):
+    """A filled annular sector (donut slice) from start_deg to end_deg at the
+    ring's radius/width, via two masked pieslices (outer wedge minus inner
+    wedge) - NOT draw.arc(..., width=RING_WIDTH). Confirmed live on hardware:
+    PIL's thick-arc rendering visibly kinks/seams partway through a 12px-wide
+    arc at this radius (it rasterizes a thick arc as several slightly-offset
+    thin arcs, which don't perfectly overlap). A pieslice difference is a
+    single filled polygon - mathematically exact, no seam possible."""
+    outer_r = RING_R + RING_WIDTH / 2
+    inner_r = RING_R - RING_WIDTH / 2
+    mask = Image.new("L", img.size, 0)
+    mdraw = ImageDraw.Draw(mask)
+    outer_box = [W / 2 - outer_r, W / 2 - outer_r, W / 2 + outer_r, W / 2 + outer_r]
+    inner_box = [W / 2 - inner_r, W / 2 - inner_r, W / 2 + inner_r, W / 2 + inner_r]
+    mdraw.pieslice(outer_box, start_deg, end_deg, fill=255)
+    mdraw.pieslice(inner_box, start_deg, end_deg, fill=0)
+    img.paste(Image.new("RGB", img.size, color), (0, 0), mask)
 
-    # track (empty slot), rounded ends - PIL's arc() has flat ends, so the caps
-    # are faked with small filled circles at both endpoints (a stroke-linecap
-    # of "round" is exactly a semicircle of radius=width/2 at the endpoint;
-    # a full circle there looks identical since the arc itself covers the rest)
-    draw.arc(bbox, RING_START_DEG, RING_END_DEG, fill=RING_TRACK, width=RING_WIDTH)
+
+def _draw_status_ring(img, draw, state):
+    # track (empty slot), rounded ends - the caps are faked with small filled
+    # circles at both endpoints (a stroke-linecap of "round" is exactly a
+    # semicircle of radius=width/2 at the endpoint; a full circle there looks
+    # identical since the arc itself covers the rest)
+    _draw_ring_arc(img, RING_START_DEG, RING_END_DEG, RING_TRACK)
     for deg in (RING_START_DEG, RING_END_DEG):
         x, y = _ring_point(deg)
         cap_r = RING_WIDTH / 2
@@ -186,7 +203,7 @@ def _draw_status_ring(draw, state):
         pct = max(0, min(100, round(state.battery_pct)))
         if pct > 0:
             fill_end = RING_START_DEG + (RING_END_DEG - RING_START_DEG) * pct / 100
-            draw.arc(bbox, RING_START_DEG, fill_end, fill=ACCENT, width=RING_WIDTH)
+            _draw_ring_arc(img, RING_START_DEG, fill_end, ACCENT)
             for deg in (RING_START_DEG, fill_end):
                 x, y = _ring_point(deg)
                 cap_r = RING_WIDTH / 2
@@ -1170,5 +1187,5 @@ def render_shutdown() -> Image.Image:
 def render(state: ui_state.UIState) -> Image.Image:
     img = _RENDERERS[state.screen](state)
     if state.status_ring_visible():
-        _draw_status_ring(ImageDraw.Draw(img), state)
+        _draw_status_ring(img, ImageDraw.Draw(img), state)
     return img
