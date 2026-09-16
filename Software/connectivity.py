@@ -1,10 +1,12 @@
 """WiFi radio control + Bluetooth radio control/pairing, via nmcli/bluetoothctl.
 
-WiFi radio on/off needs root: `nmcli general permissions` on this Pi reports
-enable-disable-wifi = "no" for the regular user (not "auth" - NetworkManager
-refuses it outright over a headless SSH session, no polkit prompt possible
-anyway), so those two calls go through `sudo -n`. Requires a one-time NOPASSWD
-sudoers entry for exactly `nmcli radio wifi on`/`off` - see CLAUDE.md.
+WiFi radio on/off, scanning, and connection management (connect/up/down/delete)
+all need root: `nmcli general permissions` on this Pi reports enable-disable-wifi
+= "no" and network-control/wifi.scan = "auth" for the regular user - "auth" means
+polkit would normally prompt, but there's no polkit agent in a headless SSH/
+systemd session to answer it, so it fails outright the same as "no" does. Every
+such call below goes through `sudo -n`. Requires a one-time NOPASSWD sudoers
+entry covering exactly these nmcli subcommands - see CLAUDE.md.
 
 Bluetooth radio power/scan/pair do NOT need sudo here: the BT adapter's rfkill
 soft-block is cleared once at boot by bluetooth-unblock.service (see
@@ -79,7 +81,7 @@ def wifi_scan(timeout=15):
     """Nearby SSIDs, strongest signal first. nmcli lists one row per access
     point (BSSID) - the same SSID can show up several times (e.g. mesh/multiple
     APs), so collapse to the strongest signal per SSID."""
-    _run(["nmcli", "dev", "wifi", "rescan"], timeout=timeout)
+    _run(["sudo", "-n", "nmcli", "dev", "wifi", "rescan"], timeout=timeout)
     r = _run(["nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY", "dev", "wifi", "list"], timeout=timeout)
     if r.returncode != 0:
         return []
@@ -97,7 +99,7 @@ def wifi_scan(timeout=15):
 
 def wifi_connect(ssid, password=None, timeout=30):
     """Connect to a network not yet known to nmcli (fresh SSID from a scan)."""
-    cmd = ["nmcli", "dev", "wifi", "connect", ssid]
+    cmd = ["sudo", "-n", "nmcli", "dev", "wifi", "connect", ssid]
     if password:
         cmd += ["password", password]
     r = _run(cmd, timeout=timeout)
@@ -109,14 +111,14 @@ def wifi_connect(ssid, password=None, timeout=30):
 def wifi_connect_known(name, timeout=20):
     """(Re)connect using an already-saved profile, addressed by its nmcli
     connection NAME (see wifi_known_connections) - not necessarily the SSID."""
-    r = _run(["nmcli", "connection", "up", name], timeout=timeout)
+    r = _run(["sudo", "-n", "nmcli", "connection", "up", name], timeout=timeout)
     if r.returncode != 0:
         return False, _short_error(r, "Verbindung fehlgeschlagen")
     return True, None
 
 
 def wifi_disconnect(name, timeout=10):
-    r = _run(["nmcli", "connection", "down", name], timeout=timeout)
+    r = _run(["sudo", "-n", "nmcli", "connection", "down", name], timeout=timeout)
     if r.returncode != 0:
         return False, _short_error(r, "Trennen fehlgeschlagen")
     return True, None
@@ -124,7 +126,7 @@ def wifi_disconnect(name, timeout=10):
 
 def wifi_forget(name, timeout=10):
     """Forget a saved network entirely (deletes the nmcli connection profile)."""
-    r = _run(["nmcli", "connection", "delete", name], timeout=timeout)
+    r = _run(["sudo", "-n", "nmcli", "connection", "delete", name], timeout=timeout)
     if r.returncode != 0:
         return False, _short_error(r, "Entfernen fehlgeschlagen")
     return True, None
