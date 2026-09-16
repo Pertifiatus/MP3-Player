@@ -283,6 +283,34 @@ def test_playlist_manage_delete_requires_confirmation():
     assert s.screen == ui_state.SCREEN_PLAYLIST_MANAGE_DETAIL, "must not navigate away without a second press"
 
 
+def test_wifi_wake_menu_item_present_and_sets_working_status():
+    s = make_state()
+    s.start_wifi_menu()
+    idx = next(i for i, it in enumerate(s.wifi_menu_items()) if it["kind"] == "wake")
+    s.wifi_menu_sel = idx
+    result = s.wifi_menu_open()
+    assert result == "wake"
+    assert s.wifi_wake_status == "working"
+    # a second open while already working must not restart the action
+    assert s.wifi_menu_open() is None
+
+
+def test_wifi_wake_done_success_clears_status_and_refreshes_menu():
+    s = make_state()
+    s.wifi_wake_status = "working"
+    s.wifi_wake_done(True)
+    assert s.wifi_wake_status is None
+    assert s.wifi_wake_error is None
+
+
+def test_wifi_wake_done_failure_sets_error():
+    s = make_state()
+    s.wifi_wake_status = "working"
+    s.wifi_wake_done(False, "Zeitueberschreitung")
+    assert s.wifi_wake_status == "error"
+    assert s.wifi_wake_error == "Zeitueberschreitung"
+
+
 def test_status_ring_visible_depends_on_setting_and_screen():
     s = make_state()
     s.settings.set("display", "status_ring", "home")

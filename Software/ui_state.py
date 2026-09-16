@@ -269,6 +269,9 @@ class UIState:
         self.wifi_connect_status = None  # None | "connecting" | "error"
         self.wifi_connect_error = None
 
+        self.wifi_wake_status = None  # None | "working" | "error" - "WLAN aufwecken" menu action
+        self.wifi_wake_error = None
+
         self.playlist_manage_sel = 0
         self.playlist_manage_idx = None
         self.playlist_manage_detail_sel = 0
@@ -411,6 +414,7 @@ class UIState:
     def wifi_menu_items(self):
         wifi_on = self.settings.get("connectivity", "wifi")
         items = [{"kind": "toggle", "label": "WLAN", "sub": "An" if wifi_on else "Aus", "on": wifi_on}]
+        items.append({"kind": "wake", "label": "WLAN aufwecken", "sub": ""})
         for n in self.wifi_known_networks:
             items.append({"kind": "network", "label": n["ssid"], "ssid": n["ssid"], "name": n["name"],
                           "connected": n.get("connected", False),
@@ -431,6 +435,12 @@ class UIState:
                 # (all go False on "off") - refresh so the list doesn't keep
                 # showing a network as connected once the radio is actually down.
                 self.refresh_wifi_menu()
+        elif item["kind"] == "wake":
+            if self.wifi_wake_status == "working":
+                return None
+            self.wifi_wake_status = "working"
+            self.wifi_wake_error = None
+            return "wake"
         elif item["kind"] == "network":
             self.wifi_device_name = item["name"]
             self.wifi_device_ssid = item["ssid"]
@@ -477,6 +487,15 @@ class UIState:
         else:
             self.wifi_action_status = "error"
             self.wifi_action_error = error
+
+    def wifi_wake_done(self, success, error=None):
+        if success:
+            self.wifi_wake_status = None
+            self.wifi_wake_error = None
+            self.refresh_wifi_menu()
+        else:
+            self.wifi_wake_status = "error"
+            self.wifi_wake_error = error
 
     # --- wifi: scan + connect to a NEW network ---------------------------------
     # Scanning/connecting are slow (seconds) and run on a background thread owned

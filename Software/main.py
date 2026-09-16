@@ -250,6 +250,22 @@ class WifiWorker:
         success, error = fn(ssid)
         self.state.wifi_device_action_done(success, error)
 
+    def start_wake(self):
+        if self._thread and self._thread.is_alive():
+            return
+        self._thread = threading.Thread(target=self._wake, daemon=True)
+        self._thread.start()
+
+    def _wake(self):
+        connectivity.wifi_set_enabled(False)
+        connectivity.wifi_set_enabled(True)
+        known = self.state.wifi_known_networks
+        if known:
+            success, error = connectivity.wifi_connect_known(known[0]["name"])
+        else:
+            success, error = True, None
+        self.state.wifi_wake_done(success, error)
+
 
 class PlaybackSync:
     """Keeps the real mpv player (see player.py) in sync with ui_state.NowPlaying
@@ -446,9 +462,11 @@ def handle_event(state, event, worker, bt_worker, wifi_worker, audio_player, kno
             if mac:
                 bt_worker.start_pair(mac)
         elif screen == ui_state.SCREEN_WIFI_MENU:
-            state.wifi_menu_open()
+            result = state.wifi_menu_open()
             if state.screen == ui_state.SCREEN_WIFI_SCAN:
                 wifi_worker.start_scan()
+            elif result == "wake":
+                wifi_worker.start_wake()
         elif screen == ui_state.SCREEN_WIFI_DEVICE:
             action = state.wifi_device_select()
             if action:
@@ -687,7 +705,7 @@ def main():
         # this too: a failed connect from there sets wifi_connect_status="error"
         # but stays on the same screen (confirmed live: the "Verbinde..."/error
         # feedback never appeared without this, looking like Play/Pause did nothing).
-        if (state.screen in (ui_state.SCREEN_WIFI_SCAN, ui_state.SCREEN_WIFI_DEVICE, ui_state.SCREEN_WIFI_PASSWORD)
+        if (state.screen in (ui_state.SCREEN_WIFI_MENU, ui_state.SCREEN_WIFI_SCAN, ui_state.SCREEN_WIFI_DEVICE, ui_state.SCREEN_WIFI_PASSWORD)
                 and now - last_wifi_redraw >= WIFI_REDRAW_INTERVAL):
             last_wifi_redraw = now
             dirty = True

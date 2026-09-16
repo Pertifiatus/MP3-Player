@@ -129,7 +129,14 @@ def test_all_screens_render_at_every_scale():
             s.wifi_menu_sel = i
             _assert_frame(ui_render.render(s))
 
-        s.wifi_menu_sel = 1  # the connected network
+        s.wifi_wake_status = "working"
+        _assert_frame(ui_render.render(s))  # "Aufwecken..."
+        s.wifi_wake_status = "error"
+        s.wifi_wake_error = "Verbindung fehlgeschlagen"
+        _assert_frame(ui_render.render(s))  # error
+        s.wifi_wake_status = None
+
+        s.wifi_menu_sel = 2  # the connected network (0=toggle, 1=wake, 2=first known network)
         s.wifi_menu_open()
         assert s.screen == ui_state.SCREEN_WIFI_DEVICE
         for i in range(len(s.wifi_device_items())):

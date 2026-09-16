@@ -973,6 +973,14 @@ def render_wifi_menu(state: ui_state.UIState) -> Image.Image:
     if state.wifi_menu_sel == 0:
         _header(draw, 36, "WLAN", _font("header", scale), DIM)
 
+    if state.wifi_wake_status == "working":
+        _text_centered(draw, W / 2, 110, "Aufwecken...", _font("sub_l", scale), DIM)
+        return img
+    if state.wifi_wake_status == "error":
+        _text_centered(draw, W / 2, 90, "Fehler:", _font("sub_l", scale), (255, 69, 58))
+        _wrap_text(draw, state.wifi_wake_error or "Unbekannter Fehler", W / 2, 116, _font("sub_s", scale), DIM, max_width=200)
+        return img
+
     entries = []
     for item in state.wifi_menu_items():
         on = item.get("on") or item.get("connected")
