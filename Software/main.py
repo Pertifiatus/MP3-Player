@@ -20,6 +20,7 @@ from buttonbox import ButtonBox, ThreadedPoller
 from power_button import PowerButton, trigger_shutdown
 from settings import Settings
 from qmi8658 import QMI8658, orientation, magnitude, SHAKE_THRESHOLD_G
+from max17048 import MAX17048
 
 # Real per-frame cost measured on-device: ~83ms (37ms render + 46ms SPI push,
 # see journalctl -u mp3player.service). The previous 250ms value was an
@@ -34,6 +35,8 @@ WIFI_RESCAN_INTERVAL = 6  # re-scan periodically while sitting on the WLAN list,
                           # network that wasn't broadcasting yet (e.g. a phone hotspot
                           # just switched on) shows up without leaving and re-entering
 SYNC_REDRAW_INTERVAL = 0.5  # same reasoning - device-flow poll / download progress land via SyncWorker
+BATTERY_POLL_INTERVAL = 30  # SOC changes slowly - no reason to hit I2C more often
+STATUS_POLL_INTERVAL = 10  # WLAN/BT "connected" check - cheap nmcli/bluetoothctl queries, no scan involved
 
 
 def init_display():
@@ -533,9 +536,17 @@ def main():
         print(f"QMI8658A nicht verfuegbar, Bewegungs-Features deaktiviert: {e}")
         state.imu = None
 
+    try:
+        battery_gauge = MAX17048()
+    except Exception as e:
+        print(f"MAX17048 nicht verfuegbar, Akkustand-Anzeige deaktiviert: {e}")
+        battery_gauge = None
+
     sink.push(ui_render.render(state))
     last_playing_redraw = time.monotonic()
     last_motion_poll = time.monotonic()
+    last_battery_poll = time.monotonic()
+    last_status_poll = time.monotonic()
     last_bt_redraw = time.monotonic()
     last_wifi_redraw = time.monotonic()
     last_wifi_rescan = time.monotonic()
@@ -613,6 +624,27 @@ def main():
             last_motion_poll = now
             if apply_motion_features(state):
                 dirty = True
+
+        if battery_gauge is not None and now - last_battery_poll >= BATTERY_POLL_INTERVAL:
+            last_battery_poll = now
+            try:
+                new_pct = round(battery_gauge.read_soc_pct())
+            except OSError:
+                new_pct = state.battery_pct  # transient I2C hiccup - keep the last known value
+            if new_pct != state.battery_pct:
+                state.battery_pct = new_pct
+                if state.status_ring_visible():
+                    dirty = True
+
+        if now - last_status_poll >= STATUS_POLL_INTERVAL:
+            last_status_poll = now
+            new_wifi_connected = any(n["connected"] for n in connectivity.wifi_known_connections())
+            new_bt_connected = any(d["connected"] for d in connectivity.bluetooth_known_devices())
+            if new_wifi_connected != state.wifi_connected or new_bt_connected != state.bt_connected:
+                state.wifi_connected = new_wifi_connected
+                state.bt_connected = new_bt_connected
+                if state.status_ring_visible():
+                    dirty = True
 
         # Not gated on bt_scanning/bt_pair_status: the exact moment scanning ends
         # but pairing hasn't started (list is ready, waiting for the user to pick
