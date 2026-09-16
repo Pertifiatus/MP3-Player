@@ -10,3 +10,6 @@ __pycache__/
 
 # superpowers:brainstorming visual-companion scratch files
 .superpowers/
+
+# superpowers:using-git-worktrees isolated workspaces
+.worktrees/
