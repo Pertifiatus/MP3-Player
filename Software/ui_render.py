@@ -156,11 +156,22 @@ BT_DOT_DEG = 134
 DOT_R = 6
 RING_TRACK = (58, 58, 60)
 RING_OFF = (72, 72, 76)  # matches _draw_toggle_pill's "off" fill
+CHARGE_GREEN = (48, 209, 88)
 
 
 def _ring_point(deg, r=RING_R):
     rad = math.radians(deg)
     return (W / 2 + r * math.cos(rad), W / 2 + r * math.sin(rad))
+
+
+def _draw_lightning_bolt(draw, cx, cy, size, color):
+    """Small zigzag bolt polygon, `size` = total height. Drawn as a plain
+    filled polygon (not a font glyph) - this project already avoids relying
+    on Unicode symbols for icons since several are missing from DejaVu, the
+    only font confirmed present on-device (see NOTES_FOR_PER.md)."""
+    s = size / 14.0
+    pts = [(1, -7), (-4, 1), (-1, 1), (-2, 7), (4, -1), (1, -1)]
+    draw.polygon([(cx + x * s, cy + y * s) for x, y in pts], fill=color)
 
 
 def _draw_status_dot(draw, deg, color, on, connected):
@@ -197,6 +208,13 @@ def _draw_ring_arc(img, start_deg, end_deg, color):
     img.paste(Image.new("RGB", img.size, color), (0, 0), mask)
 
 
+def _format_eta(minutes):
+    total_min = max(0, round(minutes))
+    if total_min >= 60:
+        return f"{total_min // 60}h{total_min % 60:02d}"
+    return f"{total_min}min"
+
+
 def _draw_status_ring(img, draw, state):
     # track (empty slot), rounded ends - the caps are faked with small filled
     # circles at both endpoints (a stroke-linecap of "round" is exactly a
@@ -211,20 +229,36 @@ def _draw_status_ring(img, draw, state):
     if state.battery_pct is not None:
         pct = max(0, min(100, round(state.battery_pct)))
         if pct > 0:
-            fill_bound = RING_ANCHOR_DEG + (RING_FAR_DEG - RING_ANCHOR_DEG) * pct / 100
-            _draw_ring_arc(img, RING_ANCHOR_DEG, fill_bound, ACCENT)
-            for deg in (RING_ANCHOR_DEG, fill_bound):
+            # Anchored at RING_FAR_DEG (bottom) and growing toward RING_ANCHOR_DEG
+            # (top) as charge increases - inverted from a naive "fill from the
+            # anchor" reading so the slot empties from the TOP down as the
+            # battery drains, matching a real gauge (full at top, empties
+            # downward) instead of draining from the bottom up.
+            fill_bound = RING_FAR_DEG + (RING_ANCHOR_DEG - RING_FAR_DEG) * pct / 100
+            _draw_ring_arc(img, RING_FAR_DEG, fill_bound, ACCENT)
+            for deg in (RING_FAR_DEG, fill_bound):
                 x, y = _ring_point(deg)
                 cap_r = RING_WIDTH / 2
                 draw.ellipse([x - cap_r, y - cap_r, x + cap_r, y + cap_r], fill=ACCENT)
-        # r=85 sits inside SAFE_R (104), unlike the arc/dots above which stay
+
+        if state.charging:
+            bolt_x, bolt_y = _ring_point(180)
+            _draw_lightning_bolt(draw, bolt_x, bolt_y, 14, CHARGE_GREEN)
+
+        # r=100 sits inside SAFE_R (104), unlike the arc/dots above which stay
         # outside it - that's why this label is additionally restricted to
         # Home-at-rest (home_sel == 0) below: drawing it on any other screen,
         # or a scrolled Home list, would paint over that screen's own content
         # (the Now-Playing disc, nav-list row text, etc).
         if state.screen == ui_state.SCREEN_HOME and state.home_sel == 0:
-            text_x, text_y = _ring_point(RING_ANCHOR_DEG, r=95)
-            _text_centered(draw, text_x, text_y, f"{pct}%", _font("ring_pct", 1.0), DIM)
+            if state.charging and state.battery_watts is not None:
+                label = f"{round(state.battery_watts)}W"
+            elif not state.charging and state.battery_eta_min is not None:
+                label = _format_eta(state.battery_eta_min)
+            else:
+                label = f"{pct}%"
+            text_x, text_y = _ring_point(RING_ANCHOR_DEG, r=100)
+            _text_centered(draw, text_x, text_y, label, _font("ring_pct", 1.0), DIM)
 
     _draw_status_dot(draw, WIFI_DOT_DEG, TEXT, state.settings.get("connectivity", "wifi"), state.wifi_connected)
     _draw_status_dot(draw, BT_DOT_DEG, CATEGORY_COLORS["connectivity"],

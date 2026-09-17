@@ -21,6 +21,8 @@ from power_button import PowerButton, trigger_shutdown
 from settings import Settings
 from qmi8658 import QMI8658, orientation, magnitude, SHAKE_THRESHOLD_G
 from max17048 import MAX17048
+from rt9466 import RT9466
+import charge_control
 
 # Real per-frame cost measured on-device: ~83ms (37ms render + 46ms SPI push,
 # see journalctl -u mp3player.service). The previous 250ms value was an
@@ -36,6 +38,8 @@ WIFI_RESCAN_INTERVAL = 6  # re-scan periodically while sitting on the WLAN list,
                           # just switched on) shows up without leaving and re-entering
 SYNC_REDRAW_INTERVAL = 0.5  # same reasoning - device-flow poll / download progress land via SyncWorker
 BATTERY_POLL_INTERVAL = 30  # SOC changes slowly - no reason to hit I2C more often
+ETA_CALC_INTERVAL = 60  # remaining-runtime estimate: recompute/smooth at most once a minute
+ETA_SMOOTHING = 0.3  # EMA weight for the newest sample - low so the estimate doesn't jump around
 STATUS_POLL_INTERVAL = 10  # WLAN/BT "connected" check - cheap nmcli/bluetoothctl queries, no scan involved
 
 
@@ -580,10 +584,20 @@ def main():
         print(f"MAX17048 nicht verfuegbar, Akkustand-Anzeige deaktiviert: {e}")
         battery_gauge = None
 
+    try:
+        charger = RT9466()
+    except Exception as e:
+        print(f"RT9466 nicht verfuegbar, Ladeleistungs-Anzeige deaktiviert: {e}")
+        charger = None
+
     sink.push(ui_render.render(state))
     last_playing_redraw = time.monotonic()
     last_motion_poll = time.monotonic()
     last_battery_poll = time.monotonic() - BATTERY_POLL_INTERVAL  # fire on the first iteration, not after a full interval
+    last_eta_calc = time.monotonic() - ETA_CALC_INTERVAL
+    eta_prev_soc = None
+    eta_prev_time = None
+    eta_smoothed_rate = None  # %/minute, None until at least one sample pair exists
     last_bt_redraw = time.monotonic()
     last_wifi_redraw = time.monotonic()
     last_wifi_rescan = time.monotonic()
@@ -668,10 +682,61 @@ def main():
             last_battery_poll = now
             try:
                 new_pct = round(battery_gauge.read_soc_pct())
+                new_vcell = battery_gauge.read_vcell()
             except OSError:
                 new_pct = state.battery_pct  # transient I2C hiccup - keep the last known value
-            if new_pct != state.battery_pct:
+                new_vcell = None
+
+            new_charging = False
+            if charger is not None:
+                try:
+                    new_charging = charger.read_status() == "charging"
+                except OSError:
+                    new_charging = state.charging
+
+            if new_charging != state.charging and not new_charging:
+                # Just unplugged - drop the smoothed drain rate rather than let the
+                # next ETA_CALC_INTERVAL tick compute a rate spanning the charging
+                # period (would produce a nonsense first estimate).
+                eta_prev_soc, eta_prev_time, eta_smoothed_rate = None, None, None
+
+            if new_pct != state.battery_pct or new_charging != state.charging:
                 state.battery_pct = new_pct
+                state.charging = new_charging
+                if state.status_ring_visible():
+                    dirty = True
+
+            if new_charging and new_vcell is not None and new_pct is not None:
+                # Approximation, not a real current measurement (rt9466.py has no
+                # ADC/current-monitor read): commanded charge current from the
+                # same band charge_control.py's own service already enforces,
+                # times measured cell voltage. Close enough while the charger is
+                # in constant-current mode (most of 0-80%); tapers optimistic
+                # near 100% (real CV-phase current is lower than the ICHG setpoint).
+                state.battery_watts = round(new_vcell * charge_control.band_current_ma(new_pct) / 1000.0, 1)
+                if state.status_ring_visible():
+                    dirty = True
+            elif state.battery_watts is not None:
+                state.battery_watts = None
+                if state.status_ring_visible():
+                    dirty = True
+
+        if not state.charging and battery_gauge is not None and now - last_eta_calc >= ETA_CALC_INTERVAL:
+            last_eta_calc = now
+            current_soc = state.battery_pct
+            if current_soc is not None:
+                if eta_prev_soc is not None:
+                    dt_min = (now - eta_prev_time) / 60.0
+                    if dt_min > 0:
+                        rate = max(0.0, (eta_prev_soc - current_soc) / dt_min)  # %/min, ignore noise/slight gain
+                        eta_smoothed_rate = rate if eta_smoothed_rate is None else (
+                            ETA_SMOOTHING * rate + (1 - ETA_SMOOTHING) * eta_smoothed_rate)
+                eta_prev_soc, eta_prev_time = current_soc, now
+
+            new_eta = current_soc / eta_smoothed_rate if (
+                eta_smoothed_rate and eta_smoothed_rate > 0.01 and current_soc is not None) else None
+            if new_eta != state.battery_eta_min:
+                state.battery_eta_min = new_eta
                 if state.status_ring_visible():
                     dirty = True
 

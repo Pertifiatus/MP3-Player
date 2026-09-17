@@ -241,6 +241,17 @@ def test_status_ring_renders_without_crashing():
                     "ring should be drawn in 'always' mode but not 'home' mode on a non-home screen"
 
 
+def test_status_ring_charging_states_render_without_crashing():
+    for charging, watts, eta in ((False, None, None), (False, None, 187), (True, 5.4, None)):
+        s = make_state()
+        s.battery_pct = 60
+        s.charging = charging
+        s.battery_watts = watts
+        s.battery_eta_min = eta
+        s.settings.set("display", "status_ring", "always")
+        _assert_frame(ui_render.render(s))
+
+
 if __name__ == "__main__":
     tests = [v for k, v in list(globals().items()) if k.startswith("test_")]
     for t in tests:
