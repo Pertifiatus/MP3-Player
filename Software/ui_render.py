@@ -223,7 +223,7 @@ def _draw_status_ring(img, draw, state):
         # or a scrolled Home list, would paint over that screen's own content
         # (the Now-Playing disc, nav-list row text, etc).
         if state.screen == ui_state.SCREEN_HOME and state.home_sel == 0:
-            text_x, text_y = _ring_point(RING_ANCHOR_DEG, r=85)
+            text_x, text_y = _ring_point(RING_ANCHOR_DEG, r=95)
             _text_centered(draw, text_x, text_y, f"{pct}%", _font("ring_pct", 1.0), DIM)
 
     _draw_status_dot(draw, WIFI_DOT_DEG, TEXT, state.settings.get("connectivity", "wifi"), state.wifi_connected)
