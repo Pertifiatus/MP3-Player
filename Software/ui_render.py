@@ -134,23 +134,20 @@ CARD_MAX_Y = W / 2 + (SAFE_R ** 2 - _MIN_CARD_HALF_W ** 2) ** 0.5
 
 # --- status ring (battery + WLAN/BT) -----------------------------------------
 # Fixed hardware-margin element, like SAFE_R - does NOT scale with ui_scale.
-# Sits between SAFE_R (104) and the physical bezel (r=120): outer edge at
-# RING_R + RING_WIDTH/2 = 116, ~4px from the true edge; inner edge at
-# RING_R - RING_WIDTH/2 = 104, flush with SAFE_R. See
-# docs/superpowers/specs/2026-09-16-status-ring-design.md for the layout this
-# was tuned against.
-#
-# Re-centered exactly on 180deg/9-o'clock, so the screen's own horizontal
-# midline (y=W/2) bisects it into two equal halves - one above center, one
-# below. RING_ANCHOR_DEG is the 0%-charge/text-anchor end (top), RING_FAR_DEG
-# the 100%-charge end (bottom); which one is numerically larger doesn't
-# matter - _draw_ring_arc sorts its two angle args itself.
-#
-# (A small edge-pinned "badge" variant - circle center at the screen's own
-# edge instead of concentric with it - was tried and reverted: even shrunk to
-# stay outside SAFE_R, cramming an arc + 2 dots + text into that tight a
-# space read as a confusing blob rather than a clean status indicator.)
-RING_R = 110
+# Concentric with the screen (not edge-pinned - see reverted commit 96998b6),
+# but pushed out so RING_R sits exactly ON the physical bezel radius (120):
+# the outer half of the 12px-wide band (r=120 to r=126) falls beyond the
+# visible round glass and is physically covered by the bezel, while the inner
+# half (r=114 to r=120) stays visible and well clear of SAFE_R (104) - so the
+# band itself reads as "cut in half by the edge" without needing to move its
+# center off-screen. RING_ANCHOR_DEG is the 0%-charge/text-anchor end (top),
+# RING_FAR_DEG the 100%-charge end (bottom); which one is numerically larger
+# doesn't matter - _draw_ring_arc sorts its two angle args itself. Re-centered
+# exactly on 180deg/9-o'clock, so the screen's own horizontal midline bisects
+# it into two equal halves top/bottom too. See
+# docs/superpowers/specs/2026-09-16-status-ring-design.md for the original
+# (smaller-radius) layout this evolved from.
+RING_R = 120
 RING_WIDTH = 12
 RING_ANCHOR_DEG = 222.5  # top-left, 42.5deg above 9-o'clock - 0% / text anchor
 RING_FAR_DEG = 137.5     # bottom-left, 42.5deg below 9-o'clock - 100% end
