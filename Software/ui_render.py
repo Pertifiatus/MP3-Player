@@ -247,10 +247,12 @@ def _draw_status_ring(img, draw, state):
 
         # r=100 sits inside SAFE_R (104), unlike the arc/dots above which stay
         # outside it - that's why these labels are additionally restricted to
-        # Home-at-rest (home_sel == 0) below: drawing them on any other screen,
-        # or a scrolled Home list, would paint over that screen's own content
-        # (the Now-Playing disc, nav-list row text, etc).
-        if state.screen == ui_state.SCREEN_HOME and state.home_sel == 0:
+        # Home-at-rest (home_sel == 0) and Now-Playing below: drawing them on
+        # any other screen, or a scrolled Home list, would paint over that
+        # screen's own content (nav-list row text, settings cards, etc). The
+        # Now-Playing disc (radius 105, see render_playing) just barely clears
+        # r=100, checked live against the actual render.
+        if (state.screen == ui_state.SCREEN_HOME and state.home_sel == 0) or state.screen == ui_state.SCREEN_PLAYING:
             f_pct = _font("ring_pct", 1.0)
             pct_x, pct_y = _ring_point(RING_ANCHOR_DEG, r=100)
             # Percentage is always shown - pushed up by one line's height so a

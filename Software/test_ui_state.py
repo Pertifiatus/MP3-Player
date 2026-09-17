@@ -324,6 +324,14 @@ def test_status_ring_visible_depends_on_setting_and_screen():
     s.screen = ui_state.SCREEN_HOME
     assert s.status_ring_visible()
 
+    s.settings.set("display", "status_ring", "home_playing")
+    s.screen = ui_state.SCREEN_HOME
+    assert s.status_ring_visible()
+    s.screen = ui_state.SCREEN_PLAYING
+    assert s.status_ring_visible()
+    s.screen = ui_state.SCREEN_LIBRARY
+    assert not s.status_ring_visible()
+
 
 def test_status_ring_setting_cycles_via_settings_detail():
     s = make_state()
@@ -331,6 +339,8 @@ def test_status_ring_setting_cycles_via_settings_detail():
     s.settings_category = "display"
     idx = next(i for i, it in enumerate(ui_state.SETTINGS_ITEMS["display"]) if it["key"] == "status_ring")
     s.settings_detail_sel = idx
+    s.settings_detail_activate()
+    assert s.settings.get("display", "status_ring") == "home_playing"
     s.settings_detail_activate()
     assert s.settings.get("display", "status_ring") == "always"
     s.settings_detail_activate()

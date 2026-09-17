@@ -113,7 +113,7 @@ SETTINGS_ITEMS = {
         {"key": "auto_sleep_s", "label": "Auto-Aus", "type": "choice",
          "choices": [(0, "Nie"), (15, "15s"), (30, "30s"), (60, "60s"), (120, "2min")]},
         {"key": "status_ring", "label": "Statusanzeige", "type": "choice",
-         "choices": [("home", "Nur Home"), ("always", "Ueberall")]},
+         "choices": [("home", "Nur Home"), ("home_playing", "Home + Player"), ("always", "Ueberall")]},
     ],
     "led": [
         {"key": "enabled", "label": "LED an", "type": "toggle"},
@@ -305,7 +305,12 @@ class UIState:
             self.settings.set("connectivity", "bluetooth", actual_bt)
 
     def status_ring_visible(self):
-        return self.settings.get("display", "status_ring") == "always" or self.screen == SCREEN_HOME
+        mode = self.settings.get("display", "status_ring")
+        if mode == "always":
+            return True
+        if mode == "home_playing":
+            return self.screen in (SCREEN_HOME, SCREEN_PLAYING)
+        return self.screen == SCREEN_HOME
 
     # --- home --------------------------------------------------------------
     def home_items(self):
