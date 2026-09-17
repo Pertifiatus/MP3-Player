@@ -129,7 +129,12 @@ def test_all_screens_render_at_every_scale():
             s.wifi_menu_sel = i
             _assert_frame(ui_render.render(s))
 
-        s.wifi_menu_sel = 1  # the connected network
+        # index by kind rather than a hardcoded position - wifi_menu_items() can
+        # grow entries between the toggle and the network list (it has on the
+        # device, via a since-merged concurrent change), which would silently
+        # shift any fixed index after it.
+        s.wifi_menu_sel = next(i for i, it in enumerate(s.wifi_menu_items())
+                                if it["kind"] == "network" and it["connected"])
         s.wifi_menu_open()
         assert s.screen == ui_state.SCREEN_WIFI_DEVICE
         for i in range(len(s.wifi_device_items())):
@@ -206,6 +211,17 @@ def test_all_screens_render_at_every_scale():
         _assert_frame(ui_render.render(s))
 
         _assert_frame(ui_render.render_shutdown())
+
+
+def test_quick_connect_overlay_renders_every_phase():
+    s = make_state()
+    s.qc_active = True
+    for phase, progress, error in [("hold", 0.0, None), ("hold", 0.5, None), ("hold", 1.0, None),
+                                    ("connecting", 1.0, None), ("error", 1.0, "Kein Gerät")]:
+        s.qc_phase = phase
+        s.qc_progress = progress
+        s.qc_error = error
+        _assert_frame(ui_render.render(s))
 
 
 if __name__ == "__main__":

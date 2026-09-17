@@ -1,3 +1,36 @@
+## TODO: LED-Indicator-Flash übergangsweise deaktiviert (17.09.2026)
+
+Beim Durchgehen der LED-Settings festgestellt: `led_service.py` läuft aktuell
+gar nicht auf dem Gerät (kein systemd-Unit, kein manueller Prozess) - die
+LED-Einstellungen (An/Aus, Modus, Farbe, Helligkeit) schreiben zwar korrekt in
+`settings.json`, steuern aber noch keine echte Hardware an. Bevor der Service
+eingerichtet wird, kam eine wichtige Korrektur von Per: **aktuell sind nur 3
+LEDs verkabelt**, nicht die ursprünglich angenommenen 9 (6 Hauptboard + 3
+ButtonBox) - `led_control.NUM_LEDS` entsprechend auf 3 korrigiert. Mapping:
+Index 0 = Play/Pause, 1 = Shuffle, 2 = Stop (je eine feste Pro-Button-LED, kein
+generischer Streifen).
+
+Dadurch hat `led_service.py`s Encoder-Skip/Volume-Cue (kurzer Farbblitz beim
+Umschalten auf der Playing-Screen, ausgelöst über `main.py`s
+`settings.set("led", "indicator", ...)`) keine LED mehr, die er benutzen
+könnte - `INDICATOR_LED_INDEX = 4` lag schon für die alte 9er-Annahme am
+oberen Rand, mit nur 3 LEDs (Index 0-2) ist er komplett out of range und hätte
+beim ersten Auslösen gecrasht (`flash_indicator()` schreibt auf
+`self._pixels[index]`).
+
+**Übergangsweise auskommentiert** in `led_service.py` (`INDICATOR_LED_INDEX`
+und der Aufruf von `flash_indicator()` in der Poll-Loop, mit `ponytail:`-
+Kommentar an der Stelle) - `main.py` schreibt weiterhin harmlos in
+`settings["led"]["indicator"]`, nur liest aktuell niemand mehr davon.
+
+**TODO sobald mehr LEDs verlötet sind (oder eine der 3 bestehenden dafür
+freigegeben wird):** Cue-Flash wieder aktivieren - entweder auf einer neuen,
+freien LED-Nummer, oder bewusst auf einer der 3 Button-LEDs (z.B. Play/Pause,
+da die während des Encoder-Drehens meist nicht gerade blinkt) mitlaufen lassen.
+Nicht vergessen: `led_service.py` braucht sowieso noch einen echten
+systemd-Unit (root, PWM+DMA) - bis dahin ist das ganze LED-Feature ohnehin nur
+Settings-UI ohne sichtbare Wirkung.
+
 ## Nachtrag: UI-Groesse überarbeitet - echtes Reflow statt Zoom (12.09.2026, fünfter Durchgang)
 
 Kein Pi-Zugriff, rein lokal (Windows) an `ui_render.py` gearbeitet + Logik-/Layout-

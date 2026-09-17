@@ -1,8 +1,9 @@
 """SK6812 addressable LED control (GPIO12 / PWM0_0).
 
-Chain length assumption: 6 LEDs on the main board (LED1-6) + 3 on the ButtonBox
-(LED1-3) = 9, daisy-chained on one GPIO12 data line. NOT yet verified against the
-PCB - see NOTES_FOR_PER.md. Adjust NUM_LEDS once confirmed.
+Chain length: only 3 LEDs currently wired up (confirmed 17.09.2026, Board 2) -
+per-button indicators, not the originally planned 9-LED main-board+ButtonBox
+chain (that's still the target once the rest are soldered, see NOTES_FOR_PER.md).
+Physical mapping: index 0 = Play/Pause, 1 = Shuffle, 2 = Stop.
 
 Needs root (sudo) to run - the underlying rpi_ws281x library uses PWM+DMA which
 requires direct hardware access. Run this module (or anything importing it) with
@@ -13,7 +14,7 @@ import time
 import board
 import neopixel
 
-NUM_LEDS = 9
+NUM_LEDS = 3
 PIN = board.D12
 
 MODE_OFF = "off"

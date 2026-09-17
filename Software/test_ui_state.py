@@ -283,6 +283,77 @@ def test_playlist_manage_delete_requires_confirmation():
     assert s.screen == ui_state.SCREEN_PLAYLIST_MANAGE_DETAIL, "must not navigate away without a second press"
 
 
+def test_quick_connect_release_before_threshold_cancels():
+    s = make_state()
+    s.quick_connect_press()
+    assert s.qc_active and s.qc_phase == "hold"
+    s.quick_connect_release()
+    assert not s.qc_active
+    assert s.qc_phase is None
+
+
+def test_quick_connect_threshold_without_known_device_fails_fast():
+    s = make_state()
+    s.settings.set("connectivity", "last_bt_device", None)
+    s.last_played = (0, 0)  # a song exists, but no device - should still fail
+    s.quick_connect_press()
+    s._qc_started_at -= ui_state.QUICK_CONNECT_HOLD_S  # simulate the full hold elapsing
+    assert s.quick_connect_tick() is True
+    mac = s.quick_connect_start()
+    assert mac is None
+    assert s.qc_phase == "error"
+    assert s.qc_error == "Kein Gerät"
+
+
+def test_quick_connect_threshold_without_last_played_fails_fast():
+    s = make_state()
+    s.settings.set("connectivity", "last_bt_device", "AA:BB:CC:DD:EE:FF")
+    s.last_played = None
+    s.quick_connect_press()
+    s._qc_started_at -= ui_state.QUICK_CONNECT_HOLD_S
+    s.quick_connect_tick()
+    mac = s.quick_connect_start()
+    assert mac is None
+    assert s.qc_error == "Kein Song"
+
+
+def test_quick_connect_success_resumes_last_played_track():
+    s = make_state()
+    s.settings.set("connectivity", "last_bt_device", "AA:BB:CC:DD:EE:FF")
+    s.last_played = (0, 1)
+    s.quick_connect_press()
+    s._qc_started_at -= ui_state.QUICK_CONNECT_HOLD_S
+    s.quick_connect_tick()
+    mac = s.quick_connect_start()
+    assert mac == "AA:BB:CC:DD:EE:FF"
+    assert s.qc_phase == "connecting"
+
+    s.quick_connect_done(True)
+    assert s.screen == ui_state.SCREEN_PLAYING
+    assert (s.now_playing.playlist_idx, s.now_playing.index) == (0, 1)
+    assert not s.qc_active
+
+
+def test_quick_connect_failure_shows_error_then_auto_dismisses():
+    s = make_state()
+    s.settings.set("connectivity", "last_bt_device", "AA:BB:CC:DD:EE:FF")
+    s.last_played = (0, 0)
+    s.quick_connect_press()
+    s._qc_started_at -= ui_state.QUICK_CONNECT_HOLD_S
+    s.quick_connect_tick()
+    s.quick_connect_start()
+
+    s.quick_connect_done(False, "Verbindung fehlgeschlagen")
+    assert s.qc_active and s.qc_phase == "error"
+    assert s.qc_error == "Verbindung fehlgeschlagen"
+    assert s.quick_connect_error_tick() is False, "must not dismiss before QUICK_CONNECT_ERROR_S elapses"
+
+    s._qc_error_at -= ui_state.QUICK_CONNECT_ERROR_S
+    assert s.quick_connect_error_tick() is True
+    assert not s.qc_active
+    assert s.qc_phase is None
+
+
 if __name__ == "__main__":
     tests = [v for k, v in list(globals().items()) if k.startswith("test_")]
     for t in tests:

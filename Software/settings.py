@@ -21,6 +21,7 @@ DEFAULTS = {
         "bluetooth": True,
         "audio_output": "bluetooth",  # bluetooth / jack
         "volume": 70,  # 0-100, encoder volume-mode on the Playing screen
+        "last_bt_device": None,  # mac of the last device we successfully connected/paired to - see Home's Quick Connect hold gesture
     },
     "sync": {
         "auto_sync_on_charge": False,

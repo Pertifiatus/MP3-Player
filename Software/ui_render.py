@@ -182,6 +182,37 @@ def _frosted_pill(img, box, radius, blur_radius=10, darken=0.5):
     img.paste(region, (x0, y0), mask)
 
 
+# --- home: "Quick Connect" (hold Play/Pause) overlay --------------------------
+QC_RING_R = 70
+QC_RING_STROKE = 10
+QC_RING_TRACK = (72, 72, 74)
+QC_ERROR_COLOR = (255, 69, 58)
+
+
+def _draw_quick_connect(img, state):
+    """Ring overlay for Home's hold-Play/Pause gesture (see ui_state.quick_connect_*).
+    Called from render() after the normal Home screen is drawn - darkens/blurs
+    the whole frame (not just a circle behind the ring) for legibility."""
+    cx = cy = W / 2
+    blurred = img.filter(ImageFilter.GaussianBlur(3))
+    dark = Image.blend(blurred, Image.new("RGB", img.size, (0, 0, 0)), 0.6)
+    img.paste(dark, (0, 0))
+
+    draw = ImageDraw.Draw(img)
+    ring_box = [cx - QC_RING_R, cy - QC_RING_R, cx + QC_RING_R, cy + QC_RING_R]
+    draw.ellipse(ring_box, outline=QC_RING_TRACK, width=QC_RING_STROKE)
+    if state.qc_progress >= 1.0:
+        draw.ellipse(ring_box, outline=TEXT, width=QC_RING_STROKE)
+    elif state.qc_progress > 0:
+        draw.arc(ring_box, start=-90, end=-90 + 360 * state.qc_progress, fill=TEXT, width=QC_RING_STROKE)
+
+    scale = _scale(state)
+    label = {"hold": "Quick Connect", "connecting": "Verbinde...",
+             "error": state.qc_error or "Fehler"}[state.qc_phase]
+    color = QC_ERROR_COLOR if state.qc_phase == "error" else TEXT
+    _text_centered(draw, cx, cy - QC_RING_R - 28, label, _font("sub_l", scale), color)
+
+
 # --- procedural cover art (ported from beispiel.html coverArtURI) -----------
 
 _cover_cache = {}
@@ -1094,4 +1125,7 @@ def render_shutdown() -> Image.Image:
 
 
 def render(state: ui_state.UIState) -> Image.Image:
-    return _RENDERERS[state.screen](state)
+    img = _RENDERERS[state.screen](state)
+    if state.qc_active:
+        _draw_quick_connect(img, state)
+    return img

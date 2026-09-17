@@ -34,6 +34,8 @@ WIFI_RESCAN_INTERVAL = 6  # re-scan periodically while sitting on the WLAN list,
                           # network that wasn't broadcasting yet (e.g. a phone hotspot
                           # just switched on) shows up without leaving and re-entering
 SYNC_REDRAW_INTERVAL = 0.5  # same reasoning - device-flow poll / download progress land via SyncWorker
+QUICK_CONNECT_REDRAW_INTERVAL = 0.1  # animates the hold-ring, and catches BTWorker's async "connecting"->"error" -
+                                      # the success case is already caught by the state.screen change below
 
 
 def init_display():
@@ -172,6 +174,8 @@ class BTWorker:
 
     def _pair(self, mac):
         success, error = connectivity.bluetooth_pair(mac)
+        if success:
+            self.state.settings.set("connectivity", "last_bt_device", mac)
         self.state.bt_pair_done(success, error)
 
     def start_device_action(self, action, mac):
@@ -185,7 +189,22 @@ class BTWorker:
               "disconnect": connectivity.bluetooth_disconnect,
               "remove": connectivity.bluetooth_remove}[action]
         success, error = fn(mac)
+        if success and action == "connect":
+            self.state.settings.set("connectivity", "last_bt_device", mac)
         self.state.bt_device_action_done(success, error)
+
+    def start_quick_connect(self, mac):
+        """Home screen's "hold Play/Pause" gesture (see ui_state.quick_connect_*) -
+        same background-thread reasoning as start_device_action, just a different
+        completion callback (resumes playback instead of returning to the BT menu)."""
+        if self._thread and self._thread.is_alive():
+            return
+        self._thread = threading.Thread(target=self._quick_connect, args=(mac,), daemon=True)
+        self._thread.start()
+
+    def _quick_connect(self, mac):
+        success, error = connectivity.bluetooth_connect(mac)
+        self.state.quick_connect_done(success, error)
 
 
 class WifiWorker:
@@ -390,6 +409,15 @@ def handle_event(state, event, worker, bt_worker, wifi_worker, audio_player, kno
             return True
         return False
 
+    # Home's "hold Play/Pause" Quick Connect gesture - releasing early cancels it
+    # (see ui_state.quick_connect_release), releasing once it's past "hold" is a
+    # no-op there, so this can't interfere with a completed/failed attempt.
+    if event["type"] == "button_up" and event["name"] == "play_pause" and screen == ui_state.SCREEN_HOME:
+        if state.qc_active:
+            state.quick_connect_release()
+            return True
+        return False
+
     if event["type"] != "button_down":
         return False
     name = event["name"]
@@ -461,6 +489,10 @@ def handle_event(state, event, worker, bt_worker, wifi_worker, audio_player, kno
         state.now_playing.toggle()
         return True
 
+    if name == "play_pause" and screen == ui_state.SCREEN_HOME:
+        state.quick_connect_press()
+        return True
+
     if name == "play_pause" and screen == ui_state.SCREEN_WIFI_PASSWORD:
         result = state.wifi_password_submit()
         if result:
@@ -527,6 +559,23 @@ def main():
     screen_off = False
     led_enabled_before_off = None
 
+    def sleep_screen():
+        nonlocal screen_off, led_enabled_before_off
+        if screen_off:
+            return
+        screen_off = True
+        led_enabled_before_off = settings.get("led", "enabled")
+        settings.set("led", "enabled", False)
+        backlight.value = False
+
+    def wake_screen():
+        nonlocal screen_off, led_enabled_before_off
+        if not screen_off:
+            return
+        screen_off = False
+        settings.set("led", "enabled", True if led_enabled_before_off is None else led_enabled_before_off)
+        backlight.value = True
+
     try:
         state.imu = QMI8658()
     except Exception as e:
@@ -540,7 +589,9 @@ def main():
     last_wifi_redraw = time.monotonic()
     last_wifi_rescan = time.monotonic()
     last_sync_redraw = time.monotonic()
+    last_qc_redraw = time.monotonic()
     last_rendered_screen = state.screen
+    last_activity = time.monotonic()
     knob_held = False
     knob_rotated_while_held = False
 
@@ -550,6 +601,10 @@ def main():
         poll_start = loop_start
         for event in buttons.poll():
             print(f"[{time.monotonic():.3f}] event: {event}", flush=True)
+            last_activity = time.monotonic()
+            if screen_off:
+                wake_screen()
+                dirty = True
             if handle_event(state, event, worker, bt_worker, wifi_worker,
                              playback.player, knob_held, knob_rotated_while_held):
                 dirty = True
@@ -586,18 +641,19 @@ def main():
             trigger_shutdown()
             return
         if pb_event == "short_press":
-            screen_off = not screen_off
+            last_activity = time.monotonic()
             if screen_off:
-                led_enabled_before_off = settings.get("led", "enabled")
-                settings.set("led", "enabled", False)
-                backlight.value = False
+                wake_screen()
             else:
-                settings.set("led", "enabled", True if led_enabled_before_off is None else led_enabled_before_off)
-                backlight.value = True
-                dirty = True
+                sleep_screen()
+            dirty = True
         poll_ms = (time.monotonic() - poll_start) * 1000
 
         now = time.monotonic()
+
+        auto_sleep_s = settings.get("display", "auto_sleep_s")
+        if not screen_off and auto_sleep_s and now - last_activity >= auto_sleep_s:
+            sleep_screen()
 
         # Not gated on screen==SCREEN_PLAYING: sync() also has to run right after
         # the user backs out (now_playing goes None) so it notices and stops the
@@ -655,6 +711,26 @@ def main():
                 and now - last_sync_redraw >= SYNC_REDRAW_INTERVAL):
             last_sync_redraw = now
             dirty = True
+
+        # Home's "hold Play/Pause" Quick Connect gesture - progress itself is
+        # cheap to compute (just a monotonic-time compare), but the resulting
+        # redraw is throttled like every other periodic-redraw case above.
+        if state.qc_phase == "hold":
+            if state.quick_connect_tick():
+                mac = state.quick_connect_start()
+                if mac:
+                    bt_worker.start_quick_connect(mac)
+                dirty = True  # phase just changed (connecting/error) - redraw now, don't wait for the throttle
+            elif now - last_qc_redraw >= QUICK_CONNECT_REDRAW_INTERVAL:
+                last_qc_redraw = now
+                dirty = True
+        elif state.qc_phase == "connecting":
+            if now - last_qc_redraw >= QUICK_CONNECT_REDRAW_INTERVAL:
+                last_qc_redraw = now
+                dirty = True
+        elif state.qc_phase == "error":
+            if state.quick_connect_error_tick():
+                dirty = True
 
         if dirty and not screen_off:
             render_start = time.monotonic()

@@ -37,9 +37,13 @@ def read_battery_pct():
         return None
 
 
-# "5th LED" of the 6 on the main board (see led_control.py's chain-layout
-# comment) - the one main.py flashes for the skip/volume mode cue.
-INDICATOR_LED_INDEX = 4
+# ponytail: indicator-flash cue disabled, upgrade path in NOTES_FOR_PER.md
+# ("LED-Indicator-Flash uebergangsweise deaktiviert", 17.09.2026) - only 3 LEDs
+# are wired right now (see led_control.py), all 3 already dedicated to
+# Play/Pause/Shuffle/Stop, so there's no free "5th LED" left for this cue.
+# Re-enable (see the commented block below) once more LEDs are soldered, or a
+# free index is chosen among the 3 that exist.
+# INDICATOR_LED_INDEX = 4
 
 
 def main():
@@ -70,10 +74,10 @@ def main():
 
         leds.refresh(battery_pct=battery_pct)
 
-        indicator = led.get("indicator")
-        if indicator and indicator["ts"] != last_indicator_ts:
-            last_indicator_ts = indicator["ts"]
-            leds.flash_indicator(INDICATOR_LED_INDEX, tuple(indicator["color"]), indicator["duration"])
+        # indicator = led.get("indicator")
+        # if indicator and indicator["ts"] != last_indicator_ts:
+        #     last_indicator_ts = indicator["ts"]
+        #     leds.flash_indicator(INDICATOR_LED_INDEX, tuple(indicator["color"]), indicator["duration"])
 
         time.sleep(POLL_INTERVAL_S)
 

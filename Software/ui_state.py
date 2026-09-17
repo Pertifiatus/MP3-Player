@@ -157,6 +157,10 @@ ENCODER_MODE_VOLUME = "volume"
 
 SCRUB_STEP_S = 5.0
 
+# Home screen's "hold Play/Pause" gesture - see UIState.quick_connect_*() below.
+QUICK_CONNECT_HOLD_S = 2.0
+QUICK_CONNECT_ERROR_S = 1.5
+
 
 class NowPlaying:
     def __init__(self, tracks, index, playlist_idx):
@@ -220,6 +224,14 @@ class UIState:
         self.last_played = None  # (playlist_idx, track_idx)
         self.shuffle = False
         self.imu = None  # set by main.py after QMI8658() succeeds, else stays None
+
+        # Home screen's "hold Play/Pause" gesture, see quick_connect_*() below.
+        self.qc_active = False
+        self.qc_phase = None  # None | "hold" | "connecting" | "error"
+        self.qc_progress = 0.0
+        self.qc_error = None
+        self._qc_started_at = None
+        self._qc_error_at = None
 
         self.settings_root_sel = 0
         self.settings_category = None
@@ -311,6 +323,80 @@ class UIState:
             self.current_playlist_idx = pl_idx
             self.now_playing = NowPlaying(LIBRARY[pl_idx][1], tr_idx, pl_idx)
             self.screen = SCREEN_PLAYING
+
+    # --- home: "Quick Connect" (hold Play/Pause) ------------------------------
+    # Same hold-threshold shape as power_button.py's shutdown hold, just as state
+    # methods instead of a hardware-poll class, since this drives UI/render state
+    # rather than a GPIO line. main.py calls quick_connect_tick() every loop
+    # iteration while qc_phase=="hold" and quick_connect_error_tick() while
+    # qc_phase=="error" - see its handle_event()/main() for the button wiring.
+    def quick_connect_press(self):
+        if self.screen != SCREEN_HOME:
+            return
+        self.qc_active = True
+        self.qc_phase = "hold"
+        self.qc_progress = 0.0
+        self._qc_started_at = time.monotonic()
+
+    def quick_connect_release(self):
+        """Releasing before the hold threshold cancels outright. Releasing once
+        qc_phase has already moved on to "connecting"/"error" does nothing - the
+        gesture no longer depends on the button being held at that point."""
+        if self.qc_phase == "hold":
+            self.qc_active = False
+            self.qc_phase = None
+
+    def quick_connect_tick(self):
+        """Call every main-loop iteration while qc_phase=="hold". Returns True
+        exactly once, the iteration the hold threshold is crossed - the caller
+        then calls quick_connect_start() to find out what to do next."""
+        if self.qc_phase != "hold":
+            return False
+        elapsed = time.monotonic() - self._qc_started_at
+        self.qc_progress = min(1.0, elapsed / QUICK_CONNECT_HOLD_S)
+        if self.qc_progress >= 1.0:
+            self.qc_phase = "connecting"
+            return True
+        return False
+
+    def quick_connect_start(self):
+        """Call once, right after quick_connect_tick() first returns True.
+        Returns the bluetooth mac for main.py's BTWorker to connect to, or None
+        if it already moved to the error state itself (nothing to connect to /
+        nothing to resume - no background connect worth starting)."""
+        mac = self.settings.get("connectivity", "last_bt_device")
+        if not mac:
+            return self._quick_connect_fail("Kein Gerät")
+        if not self.last_played:
+            return self._quick_connect_fail("Kein Song")
+        return mac
+
+    def _quick_connect_fail(self, message):
+        self.qc_phase = "error"
+        self.qc_error = message
+        self._qc_error_at = time.monotonic()
+        return None
+
+    def quick_connect_done(self, success, error=None):
+        if success:
+            pl_idx, tr_idx = self.last_played
+            self.current_playlist_idx = pl_idx
+            self.now_playing = NowPlaying(LIBRARY[pl_idx][1], tr_idx, pl_idx)
+            self.screen = SCREEN_PLAYING
+            self.qc_active = False
+            self.qc_phase = None
+        else:
+            self._quick_connect_fail(error or "Verbindung fehlgeschlagen")
+
+    def quick_connect_error_tick(self):
+        """Call every main-loop iteration while qc_phase=="error". Returns True
+        the iteration it auto-dismisses the overlay (after QUICK_CONNECT_ERROR_S)."""
+        if self.qc_phase == "error" and time.monotonic() - self._qc_error_at >= QUICK_CONNECT_ERROR_S:
+            self.qc_active = False
+            self.qc_phase = None
+            self.qc_error = None
+            return True
+        return False
 
     # --- now playing: volume (encoder in ENCODER_MODE_VOLUME) ----------------
     VOLUME_STEP = 5
