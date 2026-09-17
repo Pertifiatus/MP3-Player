@@ -6,7 +6,10 @@ set -e
 
 # --- system packages ---
 sudo apt update
-sudo apt install -y python3-pip python3-pil python3-numpy i2c-tools ffmpeg rfkill bluez bluez-firmware
+# nodejs: yt-dlp needs a JS runtime for signature-protected YouTube formats
+# (sync_youtube.py's js_runtimes option) - without it ~40% of a real
+# playlist's downloads fail silently.
+sudo apt install -y python3-pip python3-pil python3-numpy i2c-tools ffmpeg rfkill bluez bluez-firmware nodejs
 
 # --- i2c-dev module ---
 sudo modprobe i2c-dev
@@ -98,5 +101,14 @@ sudo systemctl enable charge_control.service
 echo 'pkenner ALL=(root) NOPASSWD: /usr/bin/systemctl poweroff' | sudo tee /etc/sudoers.d/mp3player-poweroff > /dev/null
 sudo chmod 440 /etc/sudoers.d/mp3player-poweroff
 sudo visudo -c
+
+# --- boot speed: cloud-init and NetworkManager-wait-online cost ~8.5s
+# combined (measured via systemd-analyze blame) and serve no purpose once the
+# device's network-config/user-data are applied - cloud-init's own config
+# doesn't change again after the first boot, and mp3player.service doesn't
+# need confirmed network connectivity to start (it has no such dependency).
+sudo systemctl disable cloud-init-local.service cloud-init-main.service cloud-init-network.service cloud-config.service cloud-final.service
+sudo systemctl disable NetworkManager-wait-online.service
+sudo touch /etc/cloud/cloud-init.disabled
 
 echo "--- done ---"
