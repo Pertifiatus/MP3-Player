@@ -139,12 +139,20 @@ CARD_MAX_Y = W / 2 + (SAFE_R ** 2 - _MIN_CARD_HALF_W ** 2) ** 0.5
 # RING_R - RING_WIDTH/2 = 104, flush with SAFE_R. See
 # docs/superpowers/specs/2026-09-16-status-ring-design.md for the layout this
 # was tuned against.
+#
+# Moved to the left edge (originally on the right, symmetric-ish around 0deg/
+# 3-o'clock) and re-centered exactly on 180deg/9-o'clock, so the screen's own
+# horizontal midline (y=W/2) bisects it into two equal halves - one above
+# center, one below - rather than the old skewed placement. RING_ANCHOR_DEG is
+# the 0%-charge/text-anchor end (top), RING_FAR_DEG the 100%-charge end
+# (bottom); which one is numerically larger doesn't matter - _draw_ring_arc
+# sorts its two angle args itself.
 RING_R = 110
 RING_WIDTH = 12
-RING_START_DEG = -55
-RING_END_DEG = 30
-WIFI_DOT_DEG = 38
-BT_DOT_DEG = 46
+RING_ANCHOR_DEG = 222.5  # top-left, 42.5deg above 9-o'clock - 0% / text anchor
+RING_FAR_DEG = 137.5     # bottom-left, 42.5deg below 9-o'clock - 100% end
+WIFI_DOT_DEG = 129.5     # continuing past RING_FAR_DEG in the same direction
+BT_DOT_DEG = 121.5
 DOT_R = 6
 RING_TRACK = (58, 58, 60)
 RING_OFF = (72, 72, 76)  # matches _draw_toggle_pill's "off" fill
@@ -177,14 +185,15 @@ def _draw_ring_arc(img, start_deg, end_deg, color):
     arc at this radius (it rasterizes a thick arc as several slightly-offset
     thin arcs, which don't perfectly overlap). A pieslice difference is a
     single filled polygon - mathematically exact, no seam possible."""
+    lo, hi = sorted((start_deg, end_deg))
     outer_r = RING_R + RING_WIDTH / 2
     inner_r = RING_R - RING_WIDTH / 2
     mask = Image.new("L", img.size, 0)
     mdraw = ImageDraw.Draw(mask)
     outer_box = [W / 2 - outer_r, W / 2 - outer_r, W / 2 + outer_r, W / 2 + outer_r]
     inner_box = [W / 2 - inner_r, W / 2 - inner_r, W / 2 + inner_r, W / 2 + inner_r]
-    mdraw.pieslice(outer_box, start_deg, end_deg, fill=255)
-    mdraw.pieslice(inner_box, start_deg, end_deg, fill=0)
+    mdraw.pieslice(outer_box, lo, hi, fill=255)
+    mdraw.pieslice(inner_box, lo, hi, fill=0)
     img.paste(Image.new("RGB", img.size, color), (0, 0), mask)
 
 
@@ -193,8 +202,8 @@ def _draw_status_ring(img, draw, state):
     # circles at both endpoints (a stroke-linecap of "round" is exactly a
     # semicircle of radius=width/2 at the endpoint; a full circle there looks
     # identical since the arc itself covers the rest)
-    _draw_ring_arc(img, RING_START_DEG, RING_END_DEG, RING_TRACK)
-    for deg in (RING_START_DEG, RING_END_DEG):
+    _draw_ring_arc(img, RING_ANCHOR_DEG, RING_FAR_DEG, RING_TRACK)
+    for deg in (RING_ANCHOR_DEG, RING_FAR_DEG):
         x, y = _ring_point(deg)
         cap_r = RING_WIDTH / 2
         draw.ellipse([x - cap_r, y - cap_r, x + cap_r, y + cap_r], fill=RING_TRACK)
@@ -202,9 +211,9 @@ def _draw_status_ring(img, draw, state):
     if state.battery_pct is not None:
         pct = max(0, min(100, round(state.battery_pct)))
         if pct > 0:
-            fill_end = RING_START_DEG + (RING_END_DEG - RING_START_DEG) * pct / 100
-            _draw_ring_arc(img, RING_START_DEG, fill_end, ACCENT)
-            for deg in (RING_START_DEG, fill_end):
+            fill_bound = RING_ANCHOR_DEG + (RING_FAR_DEG - RING_ANCHOR_DEG) * pct / 100
+            _draw_ring_arc(img, RING_ANCHOR_DEG, fill_bound, ACCENT)
+            for deg in (RING_ANCHOR_DEG, fill_bound):
                 x, y = _ring_point(deg)
                 cap_r = RING_WIDTH / 2
                 draw.ellipse([x - cap_r, y - cap_r, x + cap_r, y + cap_r], fill=ACCENT)
@@ -214,7 +223,7 @@ def _draw_status_ring(img, draw, state):
         # or a scrolled Home list, would paint over that screen's own content
         # (the Now-Playing disc, nav-list row text, etc).
         if state.screen == ui_state.SCREEN_HOME and state.home_sel == 0:
-            text_x, text_y = _ring_point(RING_START_DEG, r=85)
+            text_x, text_y = _ring_point(RING_ANCHOR_DEG, r=85)
             _text_centered(draw, text_x, text_y, f"{pct}%", _font("ring_pct", 1.0), DIM)
 
     _draw_status_dot(draw, WIFI_DOT_DEG, TEXT, state.settings.get("connectivity", "wifi"), state.wifi_connected)
