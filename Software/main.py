@@ -756,7 +756,16 @@ def main():
 
         if not state.charging and battery_gauge is not None and now - last_eta_calc >= ETA_CALC_INTERVAL:
             last_eta_calc = now
-            current_soc = state.battery_pct
+            # Raw float SOC, not the rounded state.battery_pct - real drain over a
+            # single 60s window is well under 1%, so the rounded integer almost
+            # never changes between two ticks, which made the rate always compute
+            # to exactly 0.0 (confirmed live: ETA never appeared). The MAX17048's
+            # register itself is 1/256%-resolution, precise enough to see a real
+            # per-minute delta.
+            try:
+                current_soc = battery_gauge.read_soc_pct()
+            except OSError:
+                current_soc = None
             if current_soc is not None:
                 if eta_prev_soc is not None:
                     dt_min = (now - eta_prev_time) / 60.0

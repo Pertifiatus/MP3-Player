@@ -255,8 +255,10 @@ def _draw_status_ring(img, draw, state):
             pct_x, pct_y = _ring_point(RING_ANCHOR_DEG, r=100)
             # Percentage is always shown - pushed up by one line's height so a
             # second line (watts/ETA) can sit at the old single-line position
-            # below it without the two overlapping.
-            _text_centered(draw, pct_x, pct_y - f_pct.size - 2, f"{pct}%", f_pct, DIM)
+            # below it without the two overlapping. Shifted 10px right of the
+            # second line too - purely a legibility tweak, not tied to any ring
+            # geometry.
+            _text_centered(draw, pct_x + 10, pct_y - f_pct.size - 2, f"{pct}%", f_pct, DIM)
 
             if state.charging and state.battery_watts is not None:
                 _text_centered(draw, pct_x, pct_y, f"{round(state.battery_watts)}W", f_pct, ACCENT)
