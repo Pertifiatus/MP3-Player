@@ -1,6 +1,7 @@
 """UI state machine for the front display."""
 import json
 import os
+import random
 import time
 
 import connectivity
@@ -188,8 +189,14 @@ class NowPlaying:
         self.playing = not self.playing
         self._last_tick = time.monotonic()
 
-    def skip(self, direction):
-        self.index = (self.index + direction) % len(self.tracks)
+    def skip(self, direction, shuffle=False):
+        """direction is ignored in shuffle mode - shuffle picks a random other
+        track regardless of forward/back, same as most music players' shuffle
+        behavior (no "previous" history is kept, just "any other track")."""
+        if shuffle and len(self.tracks) > 1:
+            self.index = random.choice([i for i in range(len(self.tracks)) if i != self.index])
+        else:
+            self.index = (self.index + direction) % len(self.tracks)
         self.position = 0.0
 
     def scrub(self, direction, step=SCRUB_STEP_S):
@@ -203,7 +210,7 @@ class NowPlaying:
                               else ENCODER_MODE_SKIP)
         return self.encoder_mode
 
-    def tick(self):
+    def tick(self, shuffle=False):
         now = time.monotonic()
         dt = now - self._last_tick
         self._last_tick = now
@@ -211,7 +218,7 @@ class NowPlaying:
             dur = self.current()[2]
             self.position = min(self.position + dt, dur)
             if self.position >= dur:
-                self.skip(1)
+                self.skip(1, shuffle=shuffle)
 
 
 class UIState:

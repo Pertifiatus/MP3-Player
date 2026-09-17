@@ -323,6 +323,20 @@ def _frosted_pill(img, box, radius, blur_radius=10, darken=0.5):
     img.paste(region, (x0, y0), mask)
 
 
+def _draw_shuffle_icon(draw, cx, cy, size, color):
+    """Two crossing arrows - the standard shuffle pictogram, drawn as plain
+    lines/polygons rather than a font glyph (same reasoning as this project's
+    other custom icons: several Unicode symbols are missing from DejaVu, the
+    only font confirmed present on-device, see NOTES_FOR_PER.md). `size` is
+    the icon's approximate width; centered on (cx, cy)."""
+    s = size / 16.0
+    lw = max(1, round(1.5 * s))
+    draw.line([(cx - 8 * s, cy - 3 * s), (cx + 6 * s, cy + 3 * s)], fill=color, width=lw)
+    draw.polygon([(cx + 8 * s, cy + 3 * s), (cx + 2 * s, cy + 1 * s), (cx + 4 * s, cy + 6 * s)], fill=color)
+    draw.line([(cx - 8 * s, cy + 3 * s), (cx + 6 * s, cy - 3 * s)], fill=color, width=lw)
+    draw.polygon([(cx + 8 * s, cy - 3 * s), (cx + 2 * s, cy - 1 * s), (cx + 4 * s, cy - 6 * s)], fill=color)
+
+
 # --- home: "Quick Connect" (hold Play/Pause) overlay --------------------------
 QC_RING_R = 70
 QC_RING_STROKE = 10
@@ -636,9 +650,9 @@ def render_playing(state: ui_state.UIState) -> Image.Image:
     row_y = pill_y0 + pill_h - f_control.size - round(4 * scale)
     _text_centered(draw, W / 2, row_y, f"{icon}  {state_label}", f_control, TEXT)
     if state.shuffle:
-        dot_r = max(2, round(3 * scale))
-        dot_x = W / 2 + round(46 * scale)
-        draw.ellipse([dot_x, row_y + dot_r, dot_x + 2 * dot_r, row_y + 3 * dot_r], fill=ACCENT)
+        icon_cx = W / 2 + round(50 * scale)
+        icon_cy = row_y + f_control.size / 2
+        _draw_shuffle_icon(draw, icon_cx, icon_cy, round(16 * scale), ACCENT)
 
     return img
 

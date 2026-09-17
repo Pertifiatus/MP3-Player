@@ -1,6 +1,5 @@
 """Main UI loop for the front display (GC9A01), driven by ButtonBox + QMI8658A."""
 import os
-import random
 import threading
 import time
 
@@ -353,7 +352,7 @@ class PlaybackSync:
         file_path = np.current_file()
         if not file_path or not os.path.exists(file_path):
             self._reset()
-            np.tick()  # demo/no-file track - keep the old simulated behavior
+            np.tick(shuffle=state.shuffle)  # demo/no-file track - keep the old simulated behavior
             return
 
         track_key = (np.playlist_idx, np.index)
@@ -377,7 +376,7 @@ class PlaybackSync:
         # either way there's nothing left to poll a position from - see
         # player.is_idle()'s docstring for why this replaced eof-reached.
         if self.player.is_idle():
-            np.skip(1)
+            np.skip(1, shuffle=state.shuffle)
             self._track_key = None  # force a fresh loadfile on the next sync() call
             return
 
@@ -418,7 +417,7 @@ def handle_event(state, event, worker, bt_worker, wifi_worker, audio_player, kno
             elif np.encoder_mode == ui_state.ENCODER_MODE_VOLUME:
                 state.adjust_volume(d)
             else:
-                np.skip(d)
+                np.skip(d, shuffle=state.shuffle)
         elif screen == ui_state.SCREEN_SETTINGS_ROOT:
             state.settings_root_move(d)
         elif screen == ui_state.SCREEN_SETTINGS_DETAIL:
@@ -580,8 +579,8 @@ def apply_motion_features(state):
 
     if (state.settings.get("motion", "shake_to_shuffle") and mag > SHAKE_THRESHOLD_G
             and state.screen == ui_state.SCREEN_PLAYING and state.now_playing):
-        state.now_playing.skip(random.choice([-1, 1]))
         state.shuffle = True
+        state.now_playing.skip(1, shuffle=True)  # direction is ignored in shuffle mode, see NowPlaying.skip
         dirty = True
 
     if state.settings.get("motion", "flip_to_pause"):

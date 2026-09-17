@@ -62,6 +62,23 @@ def test_now_playing_tick_advances_and_skips():
     assert np.position == 0.0
 
 
+def test_shuffle_skip_picks_a_different_track_regardless_of_direction():
+    s = make_state()
+    s.current_playlist_idx = 0
+    s.playlist_sel = 0
+    s.playlist_open()
+    np = s.now_playing
+    assert len(np.tracks) > 1, "test needs a playlist with more than one track"
+    for _ in range(20):  # enough tries that "always coincidentally the same index" would be exceedingly unlikely
+        before = np.index
+        np.skip(1, shuffle=True)
+        assert np.index != before
+        assert np.position == 0.0
+    before = np.index
+    np.skip(-1, shuffle=True)  # direction is ignored in shuffle mode - still just "a different track"
+    assert np.index != before
+
+
 def test_now_playing_current_file_matches_library_files_shape():
     s = make_state()
     s.current_playlist_idx = 0
