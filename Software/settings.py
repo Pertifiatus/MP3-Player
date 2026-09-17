@@ -9,7 +9,7 @@ DEFAULTS = {
         "brightness": 3,     # 1-5, drives GC9A01 backlight PWM (GPIO13)
         "auto_sleep_s": 30,  # 0 = never sleep
         "ui_scale": 3,       # 1-5, index into ui_render.UI_SCALE_STEPS
-        "status_ring": "home",  # "home" or "always" - see ui_render._draw_status_ring
+        "status_ring": "home",  # "home" / "always" - see ui_state.UIState.status_ring_visible()
     },
     "led": {
         "enabled": True,
@@ -22,6 +22,7 @@ DEFAULTS = {
         "bluetooth": True,
         "audio_output": "bluetooth",  # bluetooth / jack
         "volume": 70,  # 0-100, encoder volume-mode on the Playing screen
+        "last_bt_device": None,  # mac of the last device we successfully connected/paired to - see Home's Quick Connect hold gesture
     },
     "sync": {
         "auto_sync_on_charge": False,
