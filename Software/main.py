@@ -41,8 +41,14 @@ QUICK_CONNECT_REDRAW_INTERVAL = 0.1  # animates the hold-ring, and catches BTWor
                                       # the success case is already caught by the state.screen change below
 BATTERY_POLL_INTERVAL = 30  # SOC changes slowly - no reason to hit I2C more often
 CHARGE_STATUS_POLL_INTERVAL = 2  # cheap single-register read - poll fast so plug/unplug shows up quickly
-ETA_CALC_INTERVAL = 60  # remaining-runtime estimate: recompute/smooth at most once a minute
-ETA_SMOOTHING = 0.3  # EMA weight for the newest sample - low so the estimate doesn't jump around
+ETA_CALC_INTERVAL = 60  # remaining-runtime estimate: recompute at most once a minute
+ETA_WINDOW_S = 600  # rate = drain over the last 10 minutes, not just since the last tick - MAX17048
+                     # reports SOC in small steps (voltage-model based, not true coulomb counting),
+                     # so a single 60s delta can land entirely inside a flat step and read as ~0;
+                     # confirmed live (17.09.2026): a single-tick EMA sat at a stale near-0 rate and
+                     # showed 11h remaining while the cell was actually measured (independent 76s
+                     # sample) draining at a rate implying ~2.8h. A longer window averages the steps
+                     # out on its own, no smoothing-factor tuning needed.
 STATUS_POLL_INTERVAL = 10  # WLAN/BT "connected" check - cheap nmcli/bluetoothctl queries, no scan involved
 
 
@@ -629,9 +635,7 @@ def main():
     last_battery_poll = time.monotonic() - BATTERY_POLL_INTERVAL  # fire on the first iteration, not after a full interval
     last_charge_poll = time.monotonic() - CHARGE_STATUS_POLL_INTERVAL
     last_eta_calc = time.monotonic() - ETA_CALC_INTERVAL
-    eta_prev_soc = None
-    eta_prev_time = None
-    eta_smoothed_rate = None  # %/minute, None until at least one sample pair exists
+    eta_history = []  # [(time, soc), ...] samples within the last ETA_WINDOW_S, oldest first
     last_bt_redraw = time.monotonic()
     last_wifi_redraw = time.monotonic()
     last_wifi_rescan = time.monotonic()
@@ -738,10 +742,9 @@ def main():
 
             if new_charging != state.charging:
                 if not new_charging:
-                    # Just unplugged - drop the smoothed drain rate rather than let
-                    # the next ETA_CALC_INTERVAL tick compute a rate spanning the
-                    # charging period (would produce a nonsense first estimate).
-                    eta_prev_soc, eta_prev_time, eta_smoothed_rate = None, None, None
+                    # Just unplugged - drop the history rather than let the window
+                    # span the charging period (would produce a nonsense estimate).
+                    eta_history = []
                     state.battery_watts = None
                 state.charging = new_charging
                 if state.status_ring_visible():
@@ -776,17 +779,20 @@ def main():
                 current_soc = battery_gauge.read_soc_pct()
             except OSError:
                 current_soc = None
-            if current_soc is not None:
-                if eta_prev_soc is not None:
-                    dt_min = (now - eta_prev_time) / 60.0
-                    if dt_min > 0:
-                        rate = max(0.0, (eta_prev_soc - current_soc) / dt_min)  # %/min, ignore noise/slight gain
-                        eta_smoothed_rate = rate if eta_smoothed_rate is None else (
-                            ETA_SMOOTHING * rate + (1 - ETA_SMOOTHING) * eta_smoothed_rate)
-                eta_prev_soc, eta_prev_time = current_soc, now
 
-            new_eta = current_soc / eta_smoothed_rate if (
-                eta_smoothed_rate and eta_smoothed_rate > 0.01 and current_soc is not None) else None
+            new_eta = None
+            if current_soc is not None:
+                eta_history.append((now, current_soc))
+                while now - eta_history[0][0] > ETA_WINDOW_S:
+                    eta_history.pop(0)
+                oldest_time, oldest_soc = eta_history[0]
+                dt_min = (now - oldest_time) / 60.0
+                # Require at least 2 min of history - anything shorter is exactly
+                # the single-step noise this window was added to avoid.
+                if dt_min >= 2.0:
+                    rate = max(0.0, (oldest_soc - current_soc) / dt_min)  # %/min, ignore noise/slight gain
+                    new_eta = current_soc / rate if rate > 0.01 else None
+
             if new_eta != state.battery_eta_min:
                 state.battery_eta_min = new_eta
                 if state.status_ring_visible():
