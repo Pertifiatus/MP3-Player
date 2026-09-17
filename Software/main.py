@@ -40,6 +40,7 @@ SYNC_REDRAW_INTERVAL = 0.5  # same reasoning - device-flow poll / download progr
 QUICK_CONNECT_REDRAW_INTERVAL = 0.1  # animates the hold-ring, and catches BTWorker's async "connecting"->"error" -
                                       # the success case is already caught by the state.screen change below
 BATTERY_POLL_INTERVAL = 30  # SOC changes slowly - no reason to hit I2C more often
+CHARGE_STATUS_POLL_INTERVAL = 2  # cheap single-register read - poll fast so plug/unplug shows up quickly
 ETA_CALC_INTERVAL = 60  # remaining-runtime estimate: recompute/smooth at most once a minute
 ETA_SMOOTHING = 0.3  # EMA weight for the newest sample - low so the estimate doesn't jump around
 STATUS_POLL_INTERVAL = 10  # WLAN/BT "connected" check - cheap nmcli/bluetoothctl queries, no scan involved
@@ -626,6 +627,7 @@ def main():
     last_playing_redraw = time.monotonic()
     last_motion_poll = time.monotonic()
     last_battery_poll = time.monotonic() - BATTERY_POLL_INTERVAL  # fire on the first iteration, not after a full interval
+    last_charge_poll = time.monotonic() - CHARGE_STATUS_POLL_INTERVAL
     last_eta_calc = time.monotonic() - ETA_CALC_INTERVAL
     eta_prev_soc = None
     eta_prev_time = None
@@ -715,44 +717,52 @@ def main():
             last_battery_poll = now
             try:
                 new_pct = round(battery_gauge.read_soc_pct())
-                new_vcell = battery_gauge.read_vcell()
             except OSError:
                 new_pct = state.battery_pct  # transient I2C hiccup - keep the last known value
-                new_vcell = None
-
-            new_charging = False
-            if charger is not None:
-                try:
-                    new_charging = charger.read_status() == "charging"
-                except OSError:
-                    new_charging = state.charging
-
-            if new_charging != state.charging and not new_charging:
-                # Just unplugged - drop the smoothed drain rate rather than let the
-                # next ETA_CALC_INTERVAL tick compute a rate spanning the charging
-                # period (would produce a nonsense first estimate).
-                eta_prev_soc, eta_prev_time, eta_smoothed_rate = None, None, None
-
-            if new_pct != state.battery_pct or new_charging != state.charging:
+            if new_pct != state.battery_pct:
                 state.battery_pct = new_pct
+                if state.status_ring_visible():
+                    dirty = True
+
+        # Charging status gets its own fast poll, separate from the slow SOC-%
+        # poll above - a single RT9466 status-register read is cheap (unlike the
+        # WLAN/BT subprocess calls, no reason to throttle it to 30s), and
+        # plugging/unplugging the USB-C cable should show up on the ring within
+        # a couple seconds, not wait for the next SOC poll.
+        if charger is not None and now - last_charge_poll >= CHARGE_STATUS_POLL_INTERVAL:
+            last_charge_poll = now
+            try:
+                new_charging = charger.read_status() == "charging"
+            except OSError:
+                new_charging = state.charging
+
+            if new_charging != state.charging:
+                if not new_charging:
+                    # Just unplugged - drop the smoothed drain rate rather than let
+                    # the next ETA_CALC_INTERVAL tick compute a rate spanning the
+                    # charging period (would produce a nonsense first estimate).
+                    eta_prev_soc, eta_prev_time, eta_smoothed_rate = None, None, None
+                    state.battery_watts = None
                 state.charging = new_charging
                 if state.status_ring_visible():
                     dirty = True
 
-            if new_charging and new_vcell is not None and new_pct is not None:
+            if new_charging and battery_gauge is not None and state.battery_pct is not None:
                 # Approximation, not a real current measurement (rt9466.py has no
                 # ADC/current-monitor read): commanded charge current from the
                 # same band charge_control.py's own service already enforces,
                 # times measured cell voltage. Close enough while the charger is
                 # in constant-current mode (most of 0-80%); tapers optimistic
                 # near 100% (real CV-phase current is lower than the ICHG setpoint).
-                state.battery_watts = round(new_vcell * charge_control.band_current_ma(new_pct) / 1000.0, 1)
-                if state.status_ring_visible():
-                    dirty = True
-            elif state.battery_watts is not None:
-                state.battery_watts = None
-                if state.status_ring_visible():
-                    dirty = True
+                try:
+                    new_watts = round(battery_gauge.read_vcell()
+                                       * charge_control.band_current_ma(state.battery_pct) / 1000.0, 1)
+                except OSError:
+                    new_watts = state.battery_watts
+                if new_watts != state.battery_watts:
+                    state.battery_watts = new_watts
+                    if state.status_ring_visible():
+                        dirty = True
 
         if not state.charging and battery_gauge is not None and now - last_eta_calc >= ETA_CALC_INTERVAL:
             last_eta_calc = now
