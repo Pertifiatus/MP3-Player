@@ -1,6 +1,7 @@
 """UI state machine for the front display."""
 import json
 import os
+import random
 import time
 
 import connectivity
@@ -112,6 +113,8 @@ SETTINGS_ITEMS = {
         {"key": "ui_scale", "label": "UI-Groesse", "type": "stepper", "min": 1, "max": 5},
         {"key": "auto_sleep_s", "label": "Auto-Aus", "type": "choice",
          "choices": [(0, "Nie"), (15, "15s"), (30, "30s"), (60, "60s"), (120, "2min")]},
+        {"key": "status_ring", "label": "Statusanzeige", "type": "choice",
+         "choices": [("home", "Nur Home"), ("home_playing", "Home + Player"), ("always", "Ueberall")]},
     ],
     "led": [
         {"key": "enabled", "label": "LED an", "type": "toggle"},
@@ -186,8 +189,14 @@ class NowPlaying:
         self.playing = not self.playing
         self._last_tick = time.monotonic()
 
-    def skip(self, direction):
-        self.index = (self.index + direction) % len(self.tracks)
+    def skip(self, direction, shuffle=False):
+        """direction is ignored in shuffle mode - shuffle picks a random other
+        track regardless of forward/back, same as most music players' shuffle
+        behavior (no "previous" history is kept, just "any other track")."""
+        if shuffle and len(self.tracks) > 1:
+            self.index = random.choice([i for i in range(len(self.tracks)) if i != self.index])
+        else:
+            self.index = (self.index + direction) % len(self.tracks)
         self.position = 0.0
 
     def scrub(self, direction, step=SCRUB_STEP_S):
@@ -201,7 +210,7 @@ class NowPlaying:
                               else ENCODER_MODE_SKIP)
         return self.encoder_mode
 
-    def tick(self):
+    def tick(self, shuffle=False):
         now = time.monotonic()
         dt = now - self._last_tick
         self._last_tick = now
@@ -209,7 +218,7 @@ class NowPlaying:
             dur = self.current()[2]
             self.position = min(self.position + dt, dur)
             if self.position >= dur:
-                self.skip(1)
+                self.skip(1, shuffle=shuffle)
 
 
 class UIState:
@@ -224,6 +233,12 @@ class UIState:
         self.last_played = None  # (playlist_idx, track_idx)
         self.shuffle = False
         self.imu = None  # set by main.py after QMI8658() succeeds, else stays None
+        self.battery_pct = None  # 0-100 or None (gauge unavailable/not yet read); set by main.py from MAX17048
+        self.charging = False  # set by main.py from RT9466.read_status() == "charging"
+        self.battery_watts = None  # approx. charge power (VCELL * commanded ICHG), only while charging
+        self.battery_eta_min = None  # smoothed estimated minutes remaining, only while NOT charging
+        self.wifi_connected = False  # set by main.py from connectivity.wifi_known_connections()
+        self.bt_connected = False  # set by main.py from connectivity.bluetooth_known_devices()
 
         # Home screen's "hold Play/Pause" gesture, see quick_connect_*() below.
         self.qc_active = False
@@ -276,6 +291,9 @@ class UIState:
         self.wifi_connect_status = None  # None | "connecting" | "error"
         self.wifi_connect_error = None
 
+        self.wifi_wake_status = None  # None | "working" | "error" - "WLAN aufwecken" menu action
+        self.wifi_wake_error = None
+
         self.playlist_manage_sel = 0
         self.playlist_manage_idx = None
         self.playlist_manage_detail_sel = 0
@@ -292,6 +310,14 @@ class UIState:
         actual_bt = connectivity.bluetooth_is_enabled()
         if actual_bt is not None:
             self.settings.set("connectivity", "bluetooth", actual_bt)
+
+    def status_ring_visible(self):
+        mode = self.settings.get("display", "status_ring")
+        if mode == "always":
+            return True
+        if mode == "home_playing":
+            return self.screen in (SCREEN_HOME, SCREEN_PLAYING)
+        return self.screen == SCREEN_HOME
 
     # --- home --------------------------------------------------------------
     def home_items(self):
@@ -489,6 +515,7 @@ class UIState:
     def wifi_menu_items(self):
         wifi_on = self.settings.get("connectivity", "wifi")
         items = [{"kind": "toggle", "label": "WLAN", "sub": "An" if wifi_on else "Aus", "on": wifi_on}]
+        items.append({"kind": "wake", "label": "WLAN aufwecken", "sub": ""})
         for n in self.wifi_known_networks:
             items.append({"kind": "network", "label": n["ssid"], "ssid": n["ssid"], "name": n["name"],
                           "connected": n.get("connected", False),
@@ -509,6 +536,12 @@ class UIState:
                 # (all go False on "off") - refresh so the list doesn't keep
                 # showing a network as connected once the radio is actually down.
                 self.refresh_wifi_menu()
+        elif item["kind"] == "wake":
+            if self.wifi_wake_status == "working":
+                return None
+            self.wifi_wake_status = "working"
+            self.wifi_wake_error = None
+            return "wake"
         elif item["kind"] == "network":
             self.wifi_device_name = item["name"]
             self.wifi_device_ssid = item["ssid"]
@@ -555,6 +588,15 @@ class UIState:
         else:
             self.wifi_action_status = "error"
             self.wifi_action_error = error
+
+    def wifi_wake_done(self, success, error=None):
+        if success:
+            self.wifi_wake_status = None
+            self.wifi_wake_error = None
+            self.refresh_wifi_menu()
+        else:
+            self.wifi_wake_status = "error"
+            self.wifi_wake_error = error
 
     # --- wifi: scan + connect to a NEW network ---------------------------------
     # Scanning/connecting are slow (seconds) and run on a background thread owned

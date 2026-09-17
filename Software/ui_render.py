@@ -55,6 +55,7 @@ FONT_FILES = {
     "sub_l": (FONT_DIR + "DejaVuSans.ttf", 14),
     "sub_s": (FONT_DIR + "DejaVuSans.ttf", 12),
     "header": (FONT_DIR + "DejaVuSans-Bold.ttf", 13),
+    "ring_pct": (FONT_DIR + "DejaVuSans-Bold.ttf", 11),
     "icon_l": (FONT_DIR + "DejaVuSans-Bold.ttf", 30),
     "icon_s": (FONT_DIR + "DejaVuSans-Bold.ttf", 22),
     "label_title": (FONT_DIR + "DejaVuSans-Bold.ttf", 13),
@@ -131,6 +132,146 @@ _MIN_CARD_HALF_W = 50
 CARD_MAX_Y = W / 2 + (SAFE_R ** 2 - _MIN_CARD_HALF_W ** 2) ** 0.5
 
 
+# --- status ring (battery + WLAN/BT) -----------------------------------------
+# Fixed hardware-margin element, like SAFE_R - does NOT scale with ui_scale.
+# Concentric with the screen (not edge-pinned - see reverted commit 96998b6),
+# but pushed out so RING_R sits exactly ON the physical bezel radius (120):
+# the outer half of the 12px-wide band (r=120 to r=126) falls beyond the
+# visible round glass and is physically covered by the bezel, while the inner
+# half (r=114 to r=120) stays visible and well clear of SAFE_R (104) - so the
+# band itself reads as "cut in half by the edge" without needing to move its
+# center off-screen. RING_ANCHOR_DEG is the 0%-charge/text-anchor end (top),
+# RING_FAR_DEG the 100%-charge end (bottom); which one is numerically larger
+# doesn't matter - _draw_ring_arc sorts its two angle args itself. Re-centered
+# exactly on 180deg/9-o'clock, so the screen's own horizontal midline bisects
+# it into two equal halves top/bottom too. See
+# docs/superpowers/specs/2026-09-16-status-ring-design.md for the original
+# (smaller-radius) layout this evolved from.
+RING_R = 120
+RING_WIDTH = 12
+RING_ANCHOR_DEG = 210  # top-left, 30deg above 9-o'clock - 0% / text anchor
+RING_FAR_DEG = 150     # bottom-left, 30deg below 9-o'clock - 100% end
+WIFI_DOT_DEG = 142     # continuing past RING_FAR_DEG in the same direction
+BT_DOT_DEG = 134
+DOT_R = 6
+RING_TRACK = (58, 58, 60)
+RING_OFF = (72, 72, 76)  # matches _draw_toggle_pill's "off" fill
+CHARGE_GREEN = (48, 209, 88)
+
+
+def _ring_point(deg, r=RING_R):
+    rad = math.radians(deg)
+    return (W / 2 + r * math.cos(rad), W / 2 + r * math.sin(rad))
+
+
+def _draw_lightning_bolt(draw, cx, cy, size, color):
+    """Small zigzag bolt polygon, `size` = total height. Drawn as a plain
+    filled polygon (not a font glyph) - this project already avoids relying
+    on Unicode symbols for icons since several are missing from DejaVu, the
+    only font confirmed present on-device (see NOTES_FOR_PER.md)."""
+    s = size / 14.0
+    pts = [(1, -7), (-4, 1), (-1, 1), (-2, 7), (4, -1), (1, -1)]
+    draw.polygon([(cx + x * s, cy + y * s) for x, y in pts], fill=color)
+
+
+def _draw_status_dot(draw, deg, color, on, connected):
+    x, y = _ring_point(deg)
+    box = [x - DOT_R, y - DOT_R, x + DOT_R, y + DOT_R]
+    # "off" must win immediately even if `connected` is a stale background-polled
+    # True (StatusWorker only refreshes every ~10s) - otherwise flipping the
+    # radio off in Settings can leave the dot looking "connected" for up to 10s.
+    if not on:
+        draw.ellipse(box, fill=RING_OFF)
+    elif connected:
+        draw.ellipse(box, fill=color)
+    else:
+        draw.ellipse(box, outline=color, width=2)
+
+
+def _draw_ring_arc(img, start_deg, end_deg, color):
+    """A filled annular sector (donut slice) from start_deg to end_deg at the
+    ring's radius/width, via two masked pieslices (outer wedge minus inner
+    wedge) - NOT draw.arc(..., width=RING_WIDTH). Confirmed live on hardware:
+    PIL's thick-arc rendering visibly kinks/seams partway through a 12px-wide
+    arc at this radius (it rasterizes a thick arc as several slightly-offset
+    thin arcs, which don't perfectly overlap). A pieslice difference is a
+    single filled polygon - mathematically exact, no seam possible."""
+    lo, hi = sorted((start_deg, end_deg))
+    outer_r = RING_R + RING_WIDTH / 2
+    inner_r = RING_R - RING_WIDTH / 2
+    mask = Image.new("L", img.size, 0)
+    mdraw = ImageDraw.Draw(mask)
+    outer_box = [W / 2 - outer_r, W / 2 - outer_r, W / 2 + outer_r, W / 2 + outer_r]
+    inner_box = [W / 2 - inner_r, W / 2 - inner_r, W / 2 + inner_r, W / 2 + inner_r]
+    mdraw.pieslice(outer_box, lo, hi, fill=255)
+    mdraw.pieslice(inner_box, lo, hi, fill=0)
+    img.paste(Image.new("RGB", img.size, color), (0, 0), mask)
+
+
+def _format_eta(minutes):
+    total_min = max(0, round(minutes))
+    if total_min >= 60:
+        return f"{total_min // 60}h{total_min % 60:02d}"
+    return f"{total_min}min"
+
+
+def _draw_status_ring(img, draw, state):
+    # track (empty slot), rounded ends - the caps are faked with small filled
+    # circles at both endpoints (a stroke-linecap of "round" is exactly a
+    # semicircle of radius=width/2 at the endpoint; a full circle there looks
+    # identical since the arc itself covers the rest)
+    _draw_ring_arc(img, RING_ANCHOR_DEG, RING_FAR_DEG, RING_TRACK)
+    for deg in (RING_ANCHOR_DEG, RING_FAR_DEG):
+        x, y = _ring_point(deg)
+        cap_r = RING_WIDTH / 2
+        draw.ellipse([x - cap_r, y - cap_r, x + cap_r, y + cap_r], fill=RING_TRACK)
+
+    if state.battery_pct is not None:
+        pct = max(0, min(100, round(state.battery_pct)))
+        if pct > 0:
+            # Anchored at RING_FAR_DEG (bottom) and growing toward RING_ANCHOR_DEG
+            # (top) as charge increases - inverted from a naive "fill from the
+            # anchor" reading so the slot empties from the TOP down as the
+            # battery drains, matching a real gauge (full at top, empties
+            # downward) instead of draining from the bottom up.
+            fill_bound = RING_FAR_DEG + (RING_ANCHOR_DEG - RING_FAR_DEG) * pct / 100
+            _draw_ring_arc(img, RING_FAR_DEG, fill_bound, ACCENT)
+            for deg in (RING_FAR_DEG, fill_bound):
+                x, y = _ring_point(deg)
+                cap_r = RING_WIDTH / 2
+                draw.ellipse([x - cap_r, y - cap_r, x + cap_r, y + cap_r], fill=ACCENT)
+
+        if state.charging:
+            bolt_x, bolt_y = _ring_point(180)
+            _draw_lightning_bolt(draw, bolt_x, bolt_y, 14, CHARGE_GREEN)
+
+        # r=100 sits inside SAFE_R (104), unlike the arc/dots above which stay
+        # outside it - that's why these labels are additionally restricted to
+        # Home-at-rest (home_sel == 0) and Now-Playing below: drawing them on
+        # any other screen, or a scrolled Home list, would paint over that
+        # screen's own content (nav-list row text, settings cards, etc). The
+        # Now-Playing disc (radius 105, see render_playing) just barely clears
+        # r=100, checked live against the actual render.
+        if (state.screen == ui_state.SCREEN_HOME and state.home_sel == 0) or state.screen == ui_state.SCREEN_PLAYING:
+            f_pct = _font("ring_pct", 1.0)
+            pct_x, pct_y = _ring_point(RING_ANCHOR_DEG, r=100)
+            # Percentage is always shown - pushed up by one line's height so a
+            # second line (watts/ETA) can sit at the old single-line position
+            # below it without the two overlapping. Shifted 10px right of the
+            # second line too - purely a legibility tweak, not tied to any ring
+            # geometry.
+            _text_centered(draw, pct_x + 10, pct_y - f_pct.size - 2, f"{pct}%", f_pct, DIM)
+
+            if state.charging and state.battery_watts is not None:
+                _text_centered(draw, pct_x, pct_y, f"{round(state.battery_watts)}W", f_pct, ACCENT)
+            elif not state.charging and state.battery_eta_min is not None:
+                _text_centered(draw, pct_x, pct_y, _format_eta(state.battery_eta_min), f_pct, DIM)
+
+    _draw_status_dot(draw, WIFI_DOT_DEG, TEXT, state.settings.get("connectivity", "wifi"), state.wifi_connected)
+    _draw_status_dot(draw, BT_DOT_DEG, CATEGORY_COLORS["connectivity"],
+                      state.settings.get("connectivity", "bluetooth"), state.bt_connected)
+
+
 def _header(draw, y, text, font, fill):
     """Letter-spaced section header, truncated to whatever actually fits inside
     the round bezel at this y."""
@@ -180,6 +321,20 @@ def _frosted_pill(img, box, radius, blur_radius=10, darken=0.5):
     mask = Image.new("L", region.size, 0)
     ImageDraw.Draw(mask).rounded_rectangle([0, 0, region.size[0], region.size[1]], radius=radius, fill=255)
     img.paste(region, (x0, y0), mask)
+
+
+def _draw_shuffle_icon(draw, cx, cy, size, color):
+    """Two crossing arrows - the standard shuffle pictogram, drawn as plain
+    lines/polygons rather than a font glyph (same reasoning as this project's
+    other custom icons: several Unicode symbols are missing from DejaVu, the
+    only font confirmed present on-device, see NOTES_FOR_PER.md). `size` is
+    the icon's approximate width; centered on (cx, cy)."""
+    s = size / 16.0
+    lw = max(1, round(1.5 * s))
+    draw.line([(cx - 8 * s, cy - 3 * s), (cx + 6 * s, cy + 3 * s)], fill=color, width=lw)
+    draw.polygon([(cx + 8 * s, cy + 3 * s), (cx + 2 * s, cy + 1 * s), (cx + 4 * s, cy + 6 * s)], fill=color)
+    draw.line([(cx - 8 * s, cy + 3 * s), (cx + 6 * s, cy - 3 * s)], fill=color, width=lw)
+    draw.polygon([(cx + 8 * s, cy - 3 * s), (cx + 2 * s, cy - 1 * s), (cx + 4 * s, cy - 6 * s)], fill=color)
 
 
 # --- home: "Quick Connect" (hold Play/Pause) overlay --------------------------
@@ -495,9 +650,9 @@ def render_playing(state: ui_state.UIState) -> Image.Image:
     row_y = pill_y0 + pill_h - f_control.size - round(4 * scale)
     _text_centered(draw, W / 2, row_y, f"{icon}  {state_label}", f_control, TEXT)
     if state.shuffle:
-        dot_r = max(2, round(3 * scale))
-        dot_x = W / 2 + round(46 * scale)
-        draw.ellipse([dot_x, row_y + dot_r, dot_x + 2 * dot_r, row_y + 3 * dot_r], fill=ACCENT)
+        icon_cx = W / 2 + round(50 * scale)
+        icon_cy = row_y + f_control.size / 2
+        _draw_shuffle_icon(draw, icon_cx, icon_cy, round(16 * scale), ACCENT)
 
     return img
 
@@ -913,6 +1068,14 @@ def render_wifi_menu(state: ui_state.UIState) -> Image.Image:
     if state.wifi_menu_sel == 0:
         _header(draw, 36, "WLAN", _font("header", scale), DIM)
 
+    if state.wifi_wake_status == "working":
+        _text_centered(draw, W / 2, 110, "Aufwecken...", _font("sub_l", scale), DIM)
+        return img
+    if state.wifi_wake_status == "error":
+        _text_centered(draw, W / 2, 90, "Fehler:", _font("sub_l", scale), (255, 69, 58))
+        _wrap_text(draw, state.wifi_wake_error or "Unbekannter Fehler", W / 2, 116, _font("sub_s", scale), DIM, max_width=200)
+        return img
+
     entries = []
     for item in state.wifi_menu_items():
         on = item.get("on") or item.get("connected")
@@ -1126,6 +1289,8 @@ def render_shutdown() -> Image.Image:
 
 def render(state: ui_state.UIState) -> Image.Image:
     img = _RENDERERS[state.screen](state)
+    if state.status_ring_visible():
+        _draw_status_ring(img, ImageDraw.Draw(img), state)
     if state.qc_active:
         _draw_quick_connect(img, state)
     return img

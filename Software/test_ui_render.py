@@ -129,10 +129,9 @@ def test_all_screens_render_at_every_scale():
             s.wifi_menu_sel = i
             _assert_frame(ui_render.render(s))
 
-        # index by kind rather than a hardcoded position - wifi_menu_items() can
-        # grow entries between the toggle and the network list (it has on the
-        # device, via a since-merged concurrent change), which would silently
-        # shift any fixed index after it.
+        # index by kind rather than a hardcoded position - wifi_menu_items() has
+        # grown a "wake" entry between the toggle and the network list since this
+        # was first written, which silently shifted every fixed index after it.
         s.wifi_menu_sel = next(i for i, it in enumerate(s.wifi_menu_items())
                                 if it["kind"] == "network" and it["connected"])
         s.wifi_menu_open()

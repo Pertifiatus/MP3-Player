@@ -20,6 +20,9 @@ from buttonbox import ButtonBox, ThreadedPoller
 from power_button import PowerButton, trigger_shutdown
 from settings import Settings
 from qmi8658 import QMI8658, orientation, magnitude, SHAKE_THRESHOLD_G
+from max17048 import MAX17048
+from rt9466 import RT9466
+import charge_control
 
 # Real per-frame cost measured on-device: ~83ms (37ms render + 46ms SPI push,
 # see journalctl -u mp3player.service). The previous 250ms value was an
@@ -36,6 +39,10 @@ WIFI_RESCAN_INTERVAL = 6  # re-scan periodically while sitting on the WLAN list,
 SYNC_REDRAW_INTERVAL = 0.5  # same reasoning - device-flow poll / download progress land via SyncWorker
 QUICK_CONNECT_REDRAW_INTERVAL = 0.1  # animates the hold-ring, and catches BTWorker's async "connecting"->"error" -
                                       # the success case is already caught by the state.screen change below
+BATTERY_POLL_INTERVAL = 30  # SOC changes slowly - no reason to hit I2C more often
+ETA_CALC_INTERVAL = 60  # remaining-runtime estimate: recompute/smooth at most once a minute
+ETA_SMOOTHING = 0.3  # EMA weight for the newest sample - low so the estimate doesn't jump around
+STATUS_POLL_INTERVAL = 10  # WLAN/BT "connected" check - cheap nmcli/bluetoothctl queries, no scan involved
 
 
 def init_display():
@@ -207,6 +214,25 @@ class BTWorker:
         self.state.quick_connect_done(success, error)
 
 
+class StatusWorker:
+    """Polls WLAN/BT "connected" status in a background thread - connectivity.py's
+    own docstrings warn these shell out to nmcli/bluetoothctl (D-Bus round trips,
+    wifi_known_connections() alone makes one extra nmcli call per saved profile),
+    too slow to call from the render loop (same reasoning as SyncWorker/BTWorker
+    above - this project has already been bitten by exactly this class of bug,
+    see PlaybackSync's docstring)."""
+
+    def __init__(self, state):
+        self.state = state
+        threading.Thread(target=self._loop, daemon=True).start()
+
+    def _loop(self):
+        while True:
+            self.state.wifi_connected = any(n["connected"] for n in connectivity.wifi_known_connections())
+            self.state.bt_connected = any(d["connected"] for d in connectivity.bluetooth_known_devices())
+            time.sleep(STATUS_POLL_INTERVAL)
+
+
 class WifiWorker:
     """Runs WiFi scan/connect in a background thread - same reasoning as BTWorker."""
 
@@ -246,6 +272,22 @@ class WifiWorker:
               "remove": connectivity.wifi_forget}[action]
         success, error = fn(ssid)
         self.state.wifi_device_action_done(success, error)
+
+    def start_wake(self):
+        if self._thread and self._thread.is_alive():
+            return
+        self._thread = threading.Thread(target=self._wake, daemon=True)
+        self._thread.start()
+
+    def _wake(self):
+        connectivity.wifi_set_enabled(False)
+        connectivity.wifi_set_enabled(True)
+        known = self.state.wifi_known_networks
+        if known:
+            success, error = connectivity.wifi_connect_known(known[0]["name"])
+        else:
+            success, error = True, None
+        self.state.wifi_wake_done(success, error)
 
 
 class PlaybackSync:
@@ -452,9 +494,11 @@ def handle_event(state, event, worker, bt_worker, wifi_worker, audio_player, kno
             if mac:
                 bt_worker.start_pair(mac)
         elif screen == ui_state.SCREEN_WIFI_MENU:
-            state.wifi_menu_open()
+            result = state.wifi_menu_open()
             if state.screen == ui_state.SCREEN_WIFI_SCAN:
                 wifi_worker.start_scan()
+            elif result == "wake":
+                wifi_worker.start_wake()
         elif screen == ui_state.SCREEN_WIFI_DEVICE:
             action = state.wifi_device_select()
             if action:
@@ -555,6 +599,7 @@ def main():
     worker = SyncWorker(state)
     bt_worker = BTWorker(state)
     wifi_worker = WifiWorker(state)
+    status_worker = StatusWorker(state)
     playback = PlaybackSync(player.AudioPlayer())
     screen_off = False
     led_enabled_before_off = None
@@ -582,9 +627,26 @@ def main():
         print(f"QMI8658A nicht verfuegbar, Bewegungs-Features deaktiviert: {e}")
         state.imu = None
 
+    try:
+        battery_gauge = MAX17048()
+    except Exception as e:
+        print(f"MAX17048 nicht verfuegbar, Akkustand-Anzeige deaktiviert: {e}")
+        battery_gauge = None
+
+    try:
+        charger = RT9466()
+    except Exception as e:
+        print(f"RT9466 nicht verfuegbar, Ladeleistungs-Anzeige deaktiviert: {e}")
+        charger = None
+
     sink.push(ui_render.render(state))
     last_playing_redraw = time.monotonic()
     last_motion_poll = time.monotonic()
+    last_battery_poll = time.monotonic() - BATTERY_POLL_INTERVAL  # fire on the first iteration, not after a full interval
+    last_eta_calc = time.monotonic() - ETA_CALC_INTERVAL
+    eta_prev_soc = None
+    eta_prev_time = None
+    eta_smoothed_rate = None  # %/minute, None until at least one sample pair exists
     last_bt_redraw = time.monotonic()
     last_wifi_redraw = time.monotonic()
     last_wifi_rescan = time.monotonic()
@@ -592,6 +654,8 @@ def main():
     last_qc_redraw = time.monotonic()
     last_rendered_screen = state.screen
     last_activity = time.monotonic()
+    last_seen_wifi_connected = state.wifi_connected
+    last_seen_bt_connected = state.bt_connected
     knob_held = False
     knob_rotated_while_held = False
 
@@ -670,6 +734,77 @@ def main():
             if apply_motion_features(state):
                 dirty = True
 
+        if battery_gauge is not None and now - last_battery_poll >= BATTERY_POLL_INTERVAL:
+            last_battery_poll = now
+            try:
+                new_pct = round(battery_gauge.read_soc_pct())
+                new_vcell = battery_gauge.read_vcell()
+            except OSError:
+                new_pct = state.battery_pct  # transient I2C hiccup - keep the last known value
+                new_vcell = None
+
+            new_charging = False
+            if charger is not None:
+                try:
+                    new_charging = charger.read_status() == "charging"
+                except OSError:
+                    new_charging = state.charging
+
+            if new_charging != state.charging and not new_charging:
+                # Just unplugged - drop the smoothed drain rate rather than let the
+                # next ETA_CALC_INTERVAL tick compute a rate spanning the charging
+                # period (would produce a nonsense first estimate).
+                eta_prev_soc, eta_prev_time, eta_smoothed_rate = None, None, None
+
+            if new_pct != state.battery_pct or new_charging != state.charging:
+                state.battery_pct = new_pct
+                state.charging = new_charging
+                if state.status_ring_visible():
+                    dirty = True
+
+            if new_charging and new_vcell is not None and new_pct is not None:
+                # Approximation, not a real current measurement (rt9466.py has no
+                # ADC/current-monitor read): commanded charge current from the
+                # same band charge_control.py's own service already enforces,
+                # times measured cell voltage. Close enough while the charger is
+                # in constant-current mode (most of 0-80%); tapers optimistic
+                # near 100% (real CV-phase current is lower than the ICHG setpoint).
+                state.battery_watts = round(new_vcell * charge_control.band_current_ma(new_pct) / 1000.0, 1)
+                if state.status_ring_visible():
+                    dirty = True
+            elif state.battery_watts is not None:
+                state.battery_watts = None
+                if state.status_ring_visible():
+                    dirty = True
+
+        if not state.charging and battery_gauge is not None and now - last_eta_calc >= ETA_CALC_INTERVAL:
+            last_eta_calc = now
+            current_soc = state.battery_pct
+            if current_soc is not None:
+                if eta_prev_soc is not None:
+                    dt_min = (now - eta_prev_time) / 60.0
+                    if dt_min > 0:
+                        rate = max(0.0, (eta_prev_soc - current_soc) / dt_min)  # %/min, ignore noise/slight gain
+                        eta_smoothed_rate = rate if eta_smoothed_rate is None else (
+                            ETA_SMOOTHING * rate + (1 - ETA_SMOOTHING) * eta_smoothed_rate)
+                eta_prev_soc, eta_prev_time = current_soc, now
+
+            new_eta = current_soc / eta_smoothed_rate if (
+                eta_smoothed_rate and eta_smoothed_rate > 0.01 and current_soc is not None) else None
+            if new_eta != state.battery_eta_min:
+                state.battery_eta_min = new_eta
+                if state.status_ring_visible():
+                    dirty = True
+
+        # StatusWorker (background thread) owns the actual nmcli/bluetoothctl polling -
+        # this is just noticing when it changed something, so the ring redraws
+        # promptly instead of waiting for some unrelated redraw to catch up.
+        if state.wifi_connected != last_seen_wifi_connected or state.bt_connected != last_seen_bt_connected:
+            last_seen_wifi_connected = state.wifi_connected
+            last_seen_bt_connected = state.bt_connected
+            if state.status_ring_visible():
+                dirty = True
+
         # Not gated on bt_scanning/bt_pair_status: the exact moment scanning ends
         # but pairing hasn't started (list is ready, waiting for the user to pick
         # a device) matched NEITHER condition, so the redraw silently stopped
@@ -691,7 +826,7 @@ def main():
         # this too: a failed connect from there sets wifi_connect_status="error"
         # but stays on the same screen (confirmed live: the "Verbinde..."/error
         # feedback never appeared without this, looking like Play/Pause did nothing).
-        if (state.screen in (ui_state.SCREEN_WIFI_SCAN, ui_state.SCREEN_WIFI_DEVICE, ui_state.SCREEN_WIFI_PASSWORD)
+        if (state.screen in (ui_state.SCREEN_WIFI_MENU, ui_state.SCREEN_WIFI_SCAN, ui_state.SCREEN_WIFI_DEVICE, ui_state.SCREEN_WIFI_PASSWORD)
                 and now - last_wifi_redraw >= WIFI_REDRAW_INTERVAL):
             last_wifi_redraw = now
             dirty = True
