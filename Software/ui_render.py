@@ -133,28 +133,37 @@ CARD_MAX_Y = W / 2 + (SAFE_R ** 2 - _MIN_CARD_HALF_W ** 2) ** 0.5
 
 
 # --- status ring (battery + WLAN/BT) -----------------------------------------
-# EXPERIMENTAL re-placement: circle center pinned to the screen's own left edge
-# (RING_CX=0, on the image boundary) instead of the display's center - so half
-# of the underlying circle (everything at x<0) falls off-canvas by construction,
-# and only the visible right half (a true 180deg semicircle, RING_ANCHOR_DEG=-90
-# at top to RING_FAR_DEG=+90 at bottom, sweeping through 0deg/pointing into the
-# screen) is ever drawn. Still fixed/does not scale with ui_scale.
-RING_CX = 0
-RING_CY = W / 2
-RING_R = 18
-RING_WIDTH = 10
-RING_ANCHOR_DEG = -90  # top - 0% / text anchor
-RING_FAR_DEG = 90      # bottom - 100% end
-WIFI_DOT_DEG = 70      # inside the same visible semicircle, past the far end
-BT_DOT_DEG = 80
-DOT_R = 5
+# Fixed hardware-margin element, like SAFE_R - does NOT scale with ui_scale.
+# Sits between SAFE_R (104) and the physical bezel (r=120): outer edge at
+# RING_R + RING_WIDTH/2 = 116, ~4px from the true edge; inner edge at
+# RING_R - RING_WIDTH/2 = 104, flush with SAFE_R. See
+# docs/superpowers/specs/2026-09-16-status-ring-design.md for the layout this
+# was tuned against.
+#
+# Re-centered exactly on 180deg/9-o'clock, so the screen's own horizontal
+# midline (y=W/2) bisects it into two equal halves - one above center, one
+# below. RING_ANCHOR_DEG is the 0%-charge/text-anchor end (top), RING_FAR_DEG
+# the 100%-charge end (bottom); which one is numerically larger doesn't
+# matter - _draw_ring_arc sorts its two angle args itself.
+#
+# (A small edge-pinned "badge" variant - circle center at the screen's own
+# edge instead of concentric with it - was tried and reverted: even shrunk to
+# stay outside SAFE_R, cramming an arc + 2 dots + text into that tight a
+# space read as a confusing blob rather than a clean status indicator.)
+RING_R = 110
+RING_WIDTH = 12
+RING_ANCHOR_DEG = 222.5  # top-left, 42.5deg above 9-o'clock - 0% / text anchor
+RING_FAR_DEG = 137.5     # bottom-left, 42.5deg below 9-o'clock - 100% end
+WIFI_DOT_DEG = 129.5     # continuing past RING_FAR_DEG in the same direction
+BT_DOT_DEG = 121.5
+DOT_R = 6
 RING_TRACK = (58, 58, 60)
 RING_OFF = (72, 72, 76)  # matches _draw_toggle_pill's "off" fill
 
 
 def _ring_point(deg, r=RING_R):
     rad = math.radians(deg)
-    return (RING_CX + r * math.cos(rad), RING_CY + r * math.sin(rad))
+    return (W / 2 + r * math.cos(rad), W / 2 + r * math.sin(rad))
 
 
 def _draw_status_dot(draw, deg, color, on, connected):
@@ -184,8 +193,8 @@ def _draw_ring_arc(img, start_deg, end_deg, color):
     inner_r = RING_R - RING_WIDTH / 2
     mask = Image.new("L", img.size, 0)
     mdraw = ImageDraw.Draw(mask)
-    outer_box = [RING_CX - outer_r, RING_CY - outer_r, RING_CX + outer_r, RING_CY + outer_r]
-    inner_box = [RING_CX - inner_r, RING_CY - inner_r, RING_CX + inner_r, RING_CY + inner_r]
+    outer_box = [W / 2 - outer_r, W / 2 - outer_r, W / 2 + outer_r, W / 2 + outer_r]
+    inner_box = [W / 2 - inner_r, W / 2 - inner_r, W / 2 + inner_r, W / 2 + inner_r]
     mdraw.pieslice(outer_box, lo, hi, fill=255)
     mdraw.pieslice(inner_box, lo, hi, fill=0)
     img.paste(Image.new("RGB", img.size, color), (0, 0), mask)
@@ -211,14 +220,13 @@ def _draw_status_ring(img, draw, state):
                 x, y = _ring_point(deg)
                 cap_r = RING_WIDTH / 2
                 draw.ellipse([x - cap_r, y - cap_r, x + cap_r, y + cap_r], fill=ACCENT)
-        # Sits just above the little edge badge, inside the same narrow margin
-        # the badge itself lives in - that's why this label is additionally
-        # restricted to Home-at-rest (home_sel == 0) below: drawing it on any
-        # other screen, or a scrolled Home list, would paint over that
-        # screen's own content (the Now-Playing disc, nav-list row text, etc).
+        # r=85 sits inside SAFE_R (104), unlike the arc/dots above which stay
+        # outside it - that's why this label is additionally restricted to
+        # Home-at-rest (home_sel == 0) below: drawing it on any other screen,
+        # or a scrolled Home list, would paint over that screen's own content
+        # (the Now-Playing disc, nav-list row text, etc).
         if state.screen == ui_state.SCREEN_HOME and state.home_sel == 0:
-            text_x = RING_CX + 13
-            text_y = RING_CY - RING_R - RING_WIDTH / 2 - 12
+            text_x, text_y = _ring_point(RING_ANCHOR_DEG, r=85)
             _text_centered(draw, text_x, text_y, f"{pct}%", _font("ring_pct", 1.0), DIM)
 
     _draw_status_dot(draw, WIFI_DOT_DEG, TEXT, state.settings.get("connectivity", "wifi"), state.wifi_connected)
