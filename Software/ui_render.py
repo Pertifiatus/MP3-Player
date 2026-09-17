@@ -246,19 +246,22 @@ def _draw_status_ring(img, draw, state):
             _draw_lightning_bolt(draw, bolt_x, bolt_y, 14, CHARGE_GREEN)
 
         # r=100 sits inside SAFE_R (104), unlike the arc/dots above which stay
-        # outside it - that's why this label is additionally restricted to
-        # Home-at-rest (home_sel == 0) below: drawing it on any other screen,
+        # outside it - that's why these labels are additionally restricted to
+        # Home-at-rest (home_sel == 0) below: drawing them on any other screen,
         # or a scrolled Home list, would paint over that screen's own content
         # (the Now-Playing disc, nav-list row text, etc).
         if state.screen == ui_state.SCREEN_HOME and state.home_sel == 0:
+            f_pct = _font("ring_pct", 1.0)
+            pct_x, pct_y = _ring_point(RING_ANCHOR_DEG, r=100)
+            # Percentage is always shown - pushed up by one line's height so a
+            # second line (watts/ETA) can sit at the old single-line position
+            # below it without the two overlapping.
+            _text_centered(draw, pct_x, pct_y - f_pct.size - 2, f"{pct}%", f_pct, DIM)
+
             if state.charging and state.battery_watts is not None:
-                label = f"{round(state.battery_watts)}W"
+                _text_centered(draw, pct_x, pct_y, f"{round(state.battery_watts)}W", f_pct, ACCENT)
             elif not state.charging and state.battery_eta_min is not None:
-                label = _format_eta(state.battery_eta_min)
-            else:
-                label = f"{pct}%"
-            text_x, text_y = _ring_point(RING_ANCHOR_DEG, r=100)
-            _text_centered(draw, text_x, text_y, label, _font("ring_pct", 1.0), DIM)
+                _text_centered(draw, pct_x, pct_y, _format_eta(state.battery_eta_min), f_pct, DIM)
 
     _draw_status_dot(draw, WIFI_DOT_DEG, TEXT, state.settings.get("connectivity", "wifi"), state.wifi_connected)
     _draw_status_dot(draw, BT_DOT_DEG, CATEGORY_COLORS["connectivity"],
