@@ -149,10 +149,10 @@ CARD_MAX_Y = W / 2 + (SAFE_R ** 2 - _MIN_CARD_HALF_W ** 2) ** 0.5
 # (smaller-radius) layout this evolved from.
 RING_R = 120
 RING_WIDTH = 12
-RING_ANCHOR_DEG = 222.5  # top-left, 42.5deg above 9-o'clock - 0% / text anchor
-RING_FAR_DEG = 137.5     # bottom-left, 42.5deg below 9-o'clock - 100% end
-WIFI_DOT_DEG = 129.5     # continuing past RING_FAR_DEG in the same direction
-BT_DOT_DEG = 121.5
+RING_ANCHOR_DEG = 210  # top-left, 30deg above 9-o'clock - 0% / text anchor
+RING_FAR_DEG = 150     # bottom-left, 30deg below 9-o'clock - 100% end
+WIFI_DOT_DEG = 142     # continuing past RING_FAR_DEG in the same direction
+BT_DOT_DEG = 134
 DOT_R = 6
 RING_TRACK = (58, 58, 60)
 RING_OFF = (72, 72, 76)  # matches _draw_toggle_pill's "off" fill
