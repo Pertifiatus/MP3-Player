@@ -223,6 +223,55 @@ def test_quick_connect_overlay_renders_every_phase():
         _assert_frame(ui_render.render(s))
 
 
+def test_quick_connect_overlay_survives_qc_phase_reset_mid_render():
+    """Regression test: quick_connect_done() (background thread) sets qc_active=False
+    then qc_phase=None as two separate writes - render() already checked qc_active
+    before calling _draw_quick_connect, so qc_phase can still be None once it gets
+    there. Crashed live (KeyError: None) when connecting to an already-connected
+    device, which completes fast enough to reliably land in that gap."""
+    s = make_state()
+    s.qc_active = True
+    s.qc_phase = None
+    _assert_frame(ui_render.render(s))
+
+
+def test_windowed_range_bounds_and_clamping():
+    # normal case: selection well inside a long list - full window both sides
+    assert ui_render._windowed_range(60, 30) == (27, 34)
+    # near the start - clamps at 0 instead of going negative
+    assert ui_render._windowed_range(60, 0) == (0, 4)
+    assert ui_render._windowed_range(60, 2) == (0, 6)
+    # near the end - clamps at n instead of overrunning
+    assert ui_render._windowed_range(60, 59) == (56, 60)
+    # list shorter than the window on both sides - covers everything
+    assert ui_render._windowed_range(5, 2) == (0, 5)
+
+
+def test_playlist_render_windows_a_long_list_at_every_scroll_position():
+    """Regression test: render_playlist() used to build (and generate cover art
+    for) an entry for every track regardless of list length - confirmed live as
+    the lag source on a 60-track playlist, since only ~3-5 rows are ever
+    actually drawn (see _render_nav_list's own half_w cutoff). Swaps in a
+    synthetic 60-track playlist to prove the windowing stays correct (right
+    track highlighted, no crash) at the start, middle and end of a list much
+    longer than NAV_LIST_WINDOW, not just the small demo playlists."""
+    s = make_state()
+    orig_library = ui_state.LIBRARY
+    orig_covers = ui_state.LIBRARY_COVERS
+    try:
+        big_tracks = [(f"Track {i}", "Artist", 180) for i in range(60)]
+        ui_state.LIBRARY = [("Big Playlist", big_tracks)]
+        ui_state.LIBRARY_COVERS = [{"cover": None, "tracks": [None] * 60}]
+        s.current_playlist_idx = 0
+        s.screen = ui_state.SCREEN_PLAYLIST
+        for sel in (0, 30, 59):
+            s.playlist_sel = sel
+            _assert_frame(ui_render.render(s))
+    finally:
+        ui_state.LIBRARY = orig_library
+        ui_state.LIBRARY_COVERS = orig_covers
+
+
 if __name__ == "__main__":
     tests = [v for k, v in list(globals().items()) if k.startswith("test_")]
     for t in tests:

@@ -5,6 +5,8 @@ bluetoothctl calls which only work on the real Pi.
 python3 test_connectivity.py
 """
 import subprocess
+import tempfile
+import os
 
 import connectivity
 
@@ -221,6 +223,44 @@ def test_wifi_is_metered_parses_nmcli_general_output():
     assert connectivity.wifi_is_metered() is None
     subprocess.run = lambda *a, **k: _FakeResult(returncode=1, stderr="device not found")
     assert connectivity.wifi_is_metered() is None
+
+
+def _write_proc_net_tcp(lines):
+    f = tempfile.NamedTemporaryFile(mode="w", suffix=".tcp", delete=False)
+    f.write("sl  local_address rem_address st ...\n")  # header, skipped by the parser
+    f.write("\n".join(lines) + "\n")
+    f.close()
+    return f.name
+
+
+def test_ssh_session_active_true_when_port_22_established():
+    # 0016 = port 22 hex, state 01 = ESTABLISHED
+    path = _write_proc_net_tcp(["0: 0100007F:0016 0100007F:C350 01 00000000:00000000 00:00000000 00000000 1000 0 0"])
+    try:
+        assert connectivity.ssh_session_active(paths=(path,)) is True
+    finally:
+        os.unlink(path)
+
+
+def test_ssh_session_active_false_when_only_listening():
+    # state 0A = LISTEN, not an active connection
+    path = _write_proc_net_tcp(["0: 00000000:0016 00000000:0000 0A 00000000:00000000 00:00000000 00000000 1000 0 0"])
+    try:
+        assert connectivity.ssh_session_active(paths=(path,)) is False
+    finally:
+        os.unlink(path)
+
+
+def test_ssh_session_active_false_when_no_port_22():
+    path = _write_proc_net_tcp(["0: 0100007F:1F90 0100007F:C350 01 00000000:00000000 00:00000000 00000000 1000 0 0"])
+    try:
+        assert connectivity.ssh_session_active(paths=(path,)) is False
+    finally:
+        os.unlink(path)
+
+
+def test_ssh_session_active_false_when_file_missing():
+    assert connectivity.ssh_session_active(paths=("/no/such/path",)) is False
 
 
 if __name__ == "__main__":

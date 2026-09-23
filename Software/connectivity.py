@@ -50,6 +50,27 @@ def wifi_set_enabled(enabled):
     return r.returncode == 0
 
 
+def ssh_session_active(paths=("/proc/net/tcp", "/proc/net/tcp6")):
+    """True if any TCP connection to the SSH port (22) is currently ESTABLISHED -
+    used to keep main.py's WiFi auto-off timer from cutting the radio out from
+    under an active SSH session. Reads /proc/net/tcp{,6} directly instead of
+    shelling out to ss/netstat, which aren't guaranteed to be installed.
+    `paths` is overridable so this is testable without a real /proc."""
+    for path in paths:
+        try:
+            with open(path) as f:
+                next(f)  # header line
+                for line in f:
+                    fields = line.split()
+                    local_port = int(fields[1].split(":")[1], 16)
+                    state = fields[3]
+                    if local_port == 22 and state == "01":  # 01 = ESTABLISHED
+                        return True
+        except OSError:
+            pass
+    return False
+
+
 def wifi_known_connections():
     """Saved WiFi profiles (nmcli remembers credentials once connected), each
     tagged with whether it's the one currently active - used for the "known

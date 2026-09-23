@@ -230,7 +230,7 @@ class UIState:
         self.playlist_sel = 0
         self.current_playlist_idx = 0
         self.now_playing = None
-        self.last_played = None  # (playlist_idx, track_idx)
+        self.last_played = self._load_last_played()  # (playlist_idx, track_idx) or None
         self.shuffle = False
         self.imu = None  # set by main.py after QMI8658() succeeds, else stays None
         self.battery_pct = None  # 0-100 or None (gauge unavailable/not yet read); set by main.py from MAX17048
@@ -239,6 +239,12 @@ class UIState:
         self.battery_eta_min = None  # smoothed estimated minutes remaining, only while NOT charging
         self.wifi_connected = False  # set by main.py from connectivity.wifi_known_connections()
         self.bt_connected = False  # set by main.py from connectivity.bluetooth_known_devices()
+
+        # Persisted separately from every other settings.json value (see
+        # _load_last_played()/_set_last_played() below) - needed so Home's
+        # "resume" tile and the Quick Connect hold gesture (see
+        # quick_connect_*()) still have something to resume right after a
+        # reboot, before the user has played anything in this process.
 
         # Home screen's "hold Play/Pause" gesture, see quick_connect_*() below.
         self.qc_active = False
@@ -310,6 +316,24 @@ class UIState:
         actual_bt = connectivity.bluetooth_is_enabled()
         if actual_bt is not None:
             self.settings.set("connectivity", "bluetooth", actual_bt)
+
+    def _load_last_played(self):
+        """(playlist_idx, track_idx) from settings.json, or None - JSON has no
+        tuple type, so the stored value is a 2-element list; also re-validated
+        against the CURRENT LIBRARY bounds, since a re-sync between reboots
+        can shrink/reorder playlists and a stale out-of-range index would
+        otherwise crash home_items()/home_open()'s direct LIBRARY[][] lookup."""
+        raw = self.settings.get("playback", "last_played")
+        if not raw:
+            return None
+        pl_idx, tr_idx = raw
+        if 0 <= pl_idx < len(LIBRARY) and 0 <= tr_idx < len(LIBRARY[pl_idx][1]):
+            return (pl_idx, tr_idx)
+        return None
+
+    def _set_last_played(self, value):
+        self.last_played = value
+        self.settings.set("playback", "last_played", list(value) if value else None)
 
     def status_ring_visible(self):
         mode = self.settings.get("display", "status_ring")
@@ -450,7 +474,7 @@ class UIState:
     def playlist_open(self):
         tracks = LIBRARY[self.current_playlist_idx][1]
         self.now_playing = NowPlaying(tracks, self.playlist_sel, self.current_playlist_idx)
-        self.last_played = (self.current_playlist_idx, self.playlist_sel)
+        self._set_last_played((self.current_playlist_idx, self.playlist_sel))
         self.screen = SCREEN_PLAYING
 
     # --- settings --------------------------------------------------------------
@@ -913,7 +937,7 @@ class UIState:
         # "resume last track" is a fine trade for never showing a mismatched
         # track/cover).
         self.now_playing = None
-        self.last_played = None
+        self._set_last_played(None)
         self.library_sel = 0
         self.current_playlist_idx = 0
         self.playlist_manage_confirm_delete = False

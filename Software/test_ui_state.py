@@ -354,6 +354,36 @@ def test_quick_connect_failure_shows_error_then_auto_dismisses():
     assert s.qc_phase is None
 
 
+def test_last_played_survives_a_simulated_reboot():
+    path = os.path.join(tempfile.gettempdir(), "test_settings_reboot.json")
+    if os.path.exists(path):
+        os.remove(path)
+
+    s1 = ui_state.UIState(Settings(path=path))
+    s1.current_playlist_idx = 0
+    s1.playlist_sel = 1
+    s1.playlist_open()
+    assert s1.last_played == (0, 1)
+
+    # New UIState + Settings instance against the same file, as a fresh
+    # process after a reboot would create - last_played must still be there.
+    s2 = ui_state.UIState(Settings(path=path))
+    assert s2.last_played == (0, 1)
+
+
+def test_last_played_out_of_range_after_resync_is_ignored():
+    path = os.path.join(tempfile.gettempdir(), "test_settings_stale.json")
+    if os.path.exists(path):
+        os.remove(path)
+
+    settings = Settings(path=path)
+    # simulate a value left over from before a re-sync shrank the library -
+    # an index this far out of bounds can't come from a real playlist_open()
+    settings.set("playback", "last_played", [0, 999999])
+    s = ui_state.UIState(settings)
+    assert s.last_played is None, "an out-of-range stored index must not crash home_items()/home_open()"
+
+
 if __name__ == "__main__":
     tests = [v for k, v in list(globals().items()) if k.startswith("test_")]
     for t in tests:

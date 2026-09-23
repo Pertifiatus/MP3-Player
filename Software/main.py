@@ -1,6 +1,5 @@
 """Main UI loop for the front display (GC9A01), driven by ButtonBox + QMI8658A."""
 import os
-import random
 import threading
 import time
 
@@ -43,6 +42,7 @@ BATTERY_POLL_INTERVAL = 30  # SOC changes slowly - no reason to hit I2C more oft
 ETA_CALC_INTERVAL = 60  # remaining-runtime estimate: recompute/smooth at most once a minute
 ETA_SMOOTHING = 0.3  # EMA weight for the newest sample - low so the estimate doesn't jump around
 STATUS_POLL_INTERVAL = 10  # WLAN/BT "connected" check - cheap nmcli/bluetoothctl queries, no scan involved
+WIFI_AUTO_OFF_S = 180  # turn WiFi radio off after this long without a button/encoder event
 
 
 def init_display():
@@ -59,7 +59,13 @@ def init_display():
     # still used for below (see FrameSink). Keep the returned object alive so
     # it isn't garbage-collected/released, even though nothing reads its
     # root_group after this.
-    display = adafruit_gc9a01a.GC9A01A(display_bus, width=240, height=240)
+    # auto_refresh=False: Blinka's displayio starts a daemon thread at import time
+    # that re-composes and pushes each registered display's root group over this
+    # same SPI bus/CS/DC. FrameSink.push() writes from the main thread with no
+    # lock, so with the default auto_refresh=True the two can interleave raw SPI
+    # transactions (the first full refresh of the empty splash group takes
+    # ~700-900ms in pure Python, right when the first real frame lands at boot).
+    display = adafruit_gc9a01a.GC9A01A(display_bus, width=240, height=240, auto_refresh=False)
     return display_bus, display, backlight
 
 
@@ -346,7 +352,7 @@ class PlaybackSync:
         file_path = np.current_file()
         if not file_path or not os.path.exists(file_path):
             self._reset()
-            np.tick()  # demo/no-file track - keep the old simulated behavior
+            np.tick(shuffle=state.shuffle)  # demo/no-file track - keep the old simulated behavior
             return
 
         track_key = (np.playlist_idx, np.index)
@@ -370,7 +376,7 @@ class PlaybackSync:
         # either way there's nothing left to poll a position from - see
         # player.is_idle()'s docstring for why this replaced eof-reached.
         if self.player.is_idle():
-            np.skip(1)
+            np.skip(1, shuffle=state.shuffle)
             self._track_key = None  # force a fresh loadfile on the next sync() call
             return
 
@@ -411,7 +417,7 @@ def handle_event(state, event, worker, bt_worker, wifi_worker, audio_player, kno
             elif np.encoder_mode == ui_state.ENCODER_MODE_VOLUME:
                 state.adjust_volume(d)
             else:
-                np.skip(d)
+                np.skip(d, shuffle=state.shuffle)
         elif screen == ui_state.SCREEN_SETTINGS_ROOT:
             state.settings_root_move(d)
         elif screen == ui_state.SCREEN_SETTINGS_DETAIL:
@@ -573,7 +579,7 @@ def apply_motion_features(state):
 
     if (state.settings.get("motion", "shake_to_shuffle") and mag > SHAKE_THRESHOLD_G
             and state.screen == ui_state.SCREEN_PLAYING and state.now_playing):
-        state.now_playing.skip(random.choice([-1, 1]))
+        state.now_playing.skip(1, shuffle=True)
         state.shuffle = True
         dirty = True
 
@@ -718,6 +724,19 @@ def main():
         auto_sleep_s = settings.get("display", "auto_sleep_s")
         if not screen_off and auto_sleep_s and now - last_activity >= auto_sleep_s:
             sleep_screen()
+
+        # settings.get(...) itself gates re-firing: once wifi_set_enabled(False)
+        # lands, connectivity.wifi = False, so this stops matching on the next
+        # iteration - no separate one-shot flag needed. The thread/SSH checks
+        # avoid yanking the radio out from under a running sync/login-poll or an
+        # active SSH session (e.g. debugging this exact loop over SSH).
+        if (settings.get("connectivity", "wifi")
+                and now - last_activity >= WIFI_AUTO_OFF_S
+                and not (worker._thread and worker._thread.is_alive())
+                and not (wifi_worker._thread and wifi_worker._thread.is_alive())
+                and not connectivity.ssh_session_active()):
+            settings.set("connectivity", "wifi", False)
+            threading.Thread(target=connectivity.wifi_set_enabled, args=(False,), daemon=True).start()
 
         # Not gated on screen==SCREEN_PLAYING: sync() also has to run right after
         # the user backs out (now_playing goes None) so it notices and stops the

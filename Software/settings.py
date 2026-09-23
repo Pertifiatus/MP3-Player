@@ -34,6 +34,9 @@ DEFAULTS = {
         "shake_to_shuffle": True,
         "flip_to_pause": True,
     },
+    "playback": {
+        "last_played": None,  # [playlist_idx, track_idx] or None - see ui_state.UIState._load_last_played()
+    },
 }
 
 

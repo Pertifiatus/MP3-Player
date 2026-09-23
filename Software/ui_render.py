@@ -347,7 +347,19 @@ QC_ERROR_COLOR = (255, 69, 58)
 def _draw_quick_connect(img, state):
     """Ring overlay for Home's hold-Play/Pause gesture (see ui_state.quick_connect_*).
     Called from render() after the normal Home screen is drawn - darkens/blurs
-    the whole frame (not just a circle behind the ring) for legibility."""
+    the whole frame (not just a circle behind the ring) for legibility.
+
+    state.qc_active and state.qc_phase are written from a background thread
+    (BTWorker._quick_connect -> quick_connect_done(), no lock - see SyncWorker's
+    docstring for why that's normally fine here) as two separate assignments:
+    qc_active=False then qc_phase=None. render() already checked qc_active
+    before calling this, but that thread can flip qc_phase to None in the gap
+    between that check and here - confirmed live (KeyError: None below) when
+    connecting to an already-connected device, since bluetoothctl then returns
+    near-instantly and shrinks that gap to something this race actually hits.
+    Nothing left worth drawing once qc_phase is gone either way."""
+    if state.qc_phase is None:
+        return
     cx = cy = W / 2
     blurred = img.filter(ImageFilter.GaussianBlur(3))
     dark = Image.blend(blurred, Image.new("RGB", img.size, (0, 0, 0)), 0.6)
@@ -496,6 +508,25 @@ def _render_nav_list(img, draw, entries, selected_idx, scale):
         draw.text((tx, sub_y), _truncate(draw, entry["sub"], sub_font, max_w), font=sub_font, fill=sub_color)
 
 
+# _render_nav_list only ever draws rows that land within the round bezel
+# (~3-5 depending on ui_scale, see its own half_w cutoff) - but render_library/
+# render_playlist used to build (and generate cover art for) an entry for
+# EVERY item in the list, real or procedural. Cover art is the expensive part
+# (JPEG decode+resize from disk for a real synced cover, PIL gradient
+# compositing for a procedural one) - confirmed live as the lag source on a
+# 60-track playlist, since ~55 of those covers never even get drawn. This
+# bounds the built window to a fixed size around the selection regardless of
+# list length; generous vs. what's actually visible so it covers every
+# UI_SCALE_STEPS density without having to compute the exact visible count.
+NAV_LIST_WINDOW = 3
+
+
+def _windowed_range(n, selected_idx):
+    lo = max(0, selected_idx - NAV_LIST_WINDOW)
+    hi = min(n, selected_idx + NAV_LIST_WINDOW + 1)
+    return lo, hi
+
+
 def render_home(state: ui_state.UIState) -> Image.Image:
     scale = _scale(state)
     img = Image.new("RGB", (W, W), BG)
@@ -527,15 +558,17 @@ def render_library(state: ui_state.UIState) -> Image.Image:
     if state.library_sel == 0:
         _header(draw, 36, "BIBLIOTHEK", _font("header", scale), DIM)
 
+    lo, hi = _windowed_range(len(ui_state.LIBRARY), state.library_sel)
     entries = []
-    for i, (name, tracks) in enumerate(ui_state.LIBRARY):
+    for i in range(lo, hi):
+        name, tracks = ui_state.LIBRARY[i]
         color = PLAYLIST_COLOR(i)
         cover_path = ui_state.LIBRARY_COVERS[i]["cover"]
         entries.append({
             "label": name, "sub": f"{len(tracks)} Songs",
             "cover_img": _cover_image(cover_path, f"pl-{name}", color, size=140),
         })
-    _render_nav_list(img, draw, entries, state.library_sel, scale)
+    _render_nav_list(img, draw, entries, state.library_sel - lo, scale)
     return img
 
 
@@ -548,14 +581,16 @@ def render_playlist(state: ui_state.UIState) -> Image.Image:
     if state.playlist_sel == 0:
         _header(draw, 36, name.upper(), _font("header", scale), DIM)
 
-    entries = []
     track_covers = ui_state.LIBRARY_COVERS[state.current_playlist_idx]["tracks"]
-    for t_idx, (title, artist, dur) in enumerate(tracks):
+    lo, hi = _windowed_range(len(tracks), state.playlist_sel)
+    entries = []
+    for t_idx in range(lo, hi):
+        title, artist, dur = tracks[t_idx]
         entries.append({
             "label": title, "sub": f"{artist} · {_fmt_time(dur)}",
             "cover_img": _cover_image(track_covers[t_idx], f"tr-{name}-{title}", color, size=140),
         })
-    _render_nav_list(img, draw, entries, state.playlist_sel, scale)
+    _render_nav_list(img, draw, entries, state.playlist_sel - lo, scale)
     return img
 
 
