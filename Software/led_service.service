@@ -1,0 +1,20 @@
+[Unit]
+Description=Mini-Musikplayer LED service (SK6812 strip, watches settings.json)
+After=multi-user.target
+
+[Service]
+User=root
+WorkingDirectory=/home/pkenner/mp3player
+Environment=PYTHONUNBUFFERED=1
+# board/neopixel/adafruit-blinka were installed as `pkenner` (pip3 install
+# --break-system-packages without sudo falls back to the user site-packages
+# dir instead of erroring) - this service must run as root for PWM+DMA access
+# to the LED strip, and root's own python3 has no visibility into another
+# user's ~/.local, so it needs pointing there explicitly.
+Environment=PYTHONPATH=/home/pkenner/.local/lib/python3.13/site-packages
+ExecStart=/usr/bin/python3 led_service.py
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

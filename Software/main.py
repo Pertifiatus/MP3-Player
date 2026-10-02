@@ -157,6 +157,7 @@ class SyncWorker:
         try:
             excluded = self.state.settings.get("sync", "excluded_playlists")
             sync_youtube.sync_library(self.state.sync_progress_callback, excluded=excluded)
+            ui_state.reload_library()
         except RuntimeError as e:
             self.state.sync_error = str(e)
 
@@ -344,6 +345,8 @@ class PlaybackSync:
             self._pending_key = None
 
     def sync(self, state):
+        state.note_now_playing()
+
         np = state.now_playing
         if np is None:
             self._reset()

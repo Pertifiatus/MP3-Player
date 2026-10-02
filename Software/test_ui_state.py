@@ -384,6 +384,47 @@ def test_last_played_out_of_range_after_resync_is_ignored():
     assert s.last_played is None, "an out-of-range stored index must not crash home_items()/home_open()"
 
 
+def test_note_now_playing_tracks_manual_skip():
+    # Real bug: last_played was only ever set once, in playlist_open() - so
+    # Home's "Fortsetzen" tile (and Quick Connect's resume) kept pointing at
+    # whichever track was first tapped, forever, even after the user skipped
+    # forward. PlaybackSync.sync() (main.py) calls note_now_playing() every
+    # tick to fix this - this test drives that same method directly.
+    s = make_state()
+    s.current_playlist_idx = 0
+    s.playlist_sel = 0
+    s.playlist_open()
+    assert s.last_played == (0, 0)
+
+    s.now_playing.skip(1)
+    assert s.last_played == (0, 0), "not updated yet - note_now_playing() hasn't run this tick"
+    s.note_now_playing()
+    assert s.last_played == (0, 1), "should now follow the skipped-to track, not the first one played"
+
+
+def test_note_now_playing_tracks_auto_advance_at_track_end():
+    s = make_state()
+    s.current_playlist_idx = 0
+    s.playlist_sel = 0
+    s.playlist_open()
+    np = s.now_playing
+    dur = np.current()[2]
+    np.position = dur - 0.001
+    np._last_tick -= 1.0  # simulate 1s having passed
+    np.tick()  # rolls over to track 1 on its own, same as PlaybackSync.sync() would on mpv idle
+    assert np.index == 1
+
+    s.note_now_playing()
+    assert s.last_played == (0, 1), "auto-advance must update last_played too, not just manual selection"
+
+
+def test_note_now_playing_is_a_noop_with_nothing_playing():
+    s = make_state()
+    assert s.now_playing is None
+    s.note_now_playing()  # must not raise just because nothing is playing
+    assert s.last_played is None
+
+
 if __name__ == "__main__":
     tests = [v for k, v in list(globals().items()) if k.startswith("test_")]
     for t in tests:

@@ -1,0 +1,36 @@
+# Zusatz für G:\user-data (bzw. /boot/firmware/user-data) auf einer frisch mit
+# Raspberry Pi Imager geflashten Karte. NICHT die ganze user-data ersetzen -
+# Imager generiert Hostname/User/Passwort-Hash/WLAN-PSK dort jedes Mal frisch
+# (die gehören nicht ins Git-Repo). Stattdessen: nach der Zeile
+# "ssh_pwauth: true" einfügen, und den von Imager erzeugten "runcmd"-Block
+# durch den hier unten ersetzen.
+#
+# Bewirkt: Boot-Debug-Log (Journal + Netzwerkstatus) landet nach jedem Boot
+# in /boot/firmware/boot-debug.log - lesbar direkt von Windows aus, auch
+# wenn SSH/WLAN nicht erreichbar ist. Plus persistentes systemd-Journal
+# (überlebt Reboots, statt nur im RAM zu leben).
+
+write_files:
+  - path: /etc/systemd/journald.conf.d/persistent.conf
+    permissions: '0644'
+    content: |
+      [Journal]
+      Storage=persistent
+  - path: /etc/systemd/system/boot-debug.service
+    permissions: '0755'
+    content: |
+      [Unit]
+      Description=Dump boot/network diagnostics to the FAT32 boot partition for offline inspection
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      Type=oneshot
+      ExecStart=/bin/sh -c 'echo "=== $(date) ===" > /boot/firmware/boot-debug.log; journalctl -b --no-pager >> /boot/firmware/boot-debug.log 2>&1; echo "--- ip a ---" >> /boot/firmware/boot-debug.log; ip a >> /boot/firmware/boot-debug.log 2>&1; echo "--- nmcli device status ---" >> /boot/firmware/boot-debug.log; nmcli device status >> /boot/firmware/boot-debug.log 2>&1; echo "--- nmcli general status ---" >> /boot/firmware/boot-debug.log; nmcli general status >> /boot/firmware/boot-debug.log 2>&1; echo "--- failed units ---" >> /boot/firmware/boot-debug.log; systemctl --failed --no-pager >> /boot/firmware/boot-debug.log 2>&1'
+
+      [Install]
+      WantedBy=multi-user.target
+runcmd:
+  - [ systemctl, enable, --now, ssh ]
+  - [ systemctl, daemon-reload ]
+  - [ systemctl, enable, --now, boot-debug.service ]

@@ -315,6 +315,15 @@ def sync_library(progress_callback, excluded=()):
                 "quiet": True,
                 "no_warnings": True,
                 "noprogress": True,
+                # Without any delay, a real library (11 playlists, hundreds of
+                # tracks) triggers YouTube's abuse detection within the first
+                # couple dozen requests - confirmed live: every subsequent
+                # video came back "rate-limited... for up to an hour" for the
+                # rest of that sync. Same values yt-dlp's own `-t sleep`
+                # preset uses (see `yt-dlp --help`).
+                "sleep_interval_requests": 0.75,
+                "sleep_interval": 10,
+                "max_sleep_interval": 20,
                 # Needed for videos whose formats are signature-protected - without
                 # it yt-dlp silently has fewer formats available and can fail
                 # entirely (~42% of a real playlist in testing). Deno is yt-dlp's

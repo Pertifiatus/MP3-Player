@@ -4,6 +4,10 @@ Software/youtube_token.json
 Software/youtube_cookies.txt
 Software/settings.json
 
+# Synced audio library - large binary/copyrighted content, not source
+Software/music/
+Software/library.json
+
 # Python build artifacts
 __pycache__/
 *.pyc

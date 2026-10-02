@@ -477,6 +477,23 @@ class UIState:
         self._set_last_played((self.current_playlist_idx, self.playlist_sel))
         self.screen = SCREEN_PLAYING
 
+    def note_now_playing(self):
+        """Keeps last_played (Home's "Fortsetzen" tile, Quick Connect, and
+        resume-after-restart) pointing at whichever track is actually playing
+        right now - not just whichever was first manually selected.
+
+        Call every tick (main.py's PlaybackSync.sync() does, unconditionally,
+        same as it runs regardless of which screen is active): manual skip,
+        shuffle skip, and auto-advance at track end all move now_playing.index
+        without going through playlist_open(), so without this they left
+        last_played stuck on the first song of the session forever.
+        """
+        if self.now_playing is None:
+            return
+        current = (self.now_playing.playlist_idx, self.now_playing.index)
+        if current != self.last_played:
+            self._set_last_played(current)
+
     # --- settings --------------------------------------------------------------
     def settings_root_move(self, direction):
         self.settings_root_sel = (self.settings_root_sel + direction) % len(SETTINGS_CATEGORIES)

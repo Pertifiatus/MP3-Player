@@ -4,8 +4,27 @@
 # so run it interactively: bash setup_pi.sh
 set -e
 
+# Resolve paths relative to this script's own location, not the caller's CWD -
+# so it works whether invoked as ./setup_pi.sh, bash Software/setup_pi.sh, or
+# via an absolute path.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # --- system packages ---
 sudo apt update
+
+# Add a temporary raw swapfile before the big install below - this CM4 only
+# has ~905MB RAM (confirmed via `free -h`) and Raspberry Pi OS's default
+# zram swap competes with that same physical RAM pool instead of adding
+# real headroom. Installing nodejs/bluez/pipewire/wireplumber/ffmpeg in one
+# go OOM-killed apt without this. Uses plain fallocate/mkswap/swapon
+# (util-linux, always present) instead of a swap-manager package - works
+# the same regardless of whether the OS ships dphys-swapfile or zram-only.
+SETUP_SWAPFILE=/var/tmp/setup-swap
+sudo fallocate -l 1G "$SETUP_SWAPFILE"
+sudo chmod 600 "$SETUP_SWAPFILE"
+sudo mkswap "$SETUP_SWAPFILE" > /dev/null
+sudo swapon "$SETUP_SWAPFILE"
+
 # nodejs: yt-dlp needs a JS runtime for signature-protected YouTube formats
 # (sync_youtube.py's js_runtimes option) - without it ~40% of a real
 # playlist's downloads fail silently.
@@ -17,8 +36,18 @@ sudo apt update
 # sound card exists). libspa-0.2-bluetooth is the actual piece that lets
 # PipeWire/WirePlumber register the A2DP profile with BlueZ - without it,
 # bluetoothctl never advertises an Audio Sink/Source UUID at all.
-sudo apt install -y python3-pip python3-pil python3-numpy i2c-tools ffmpeg rfkill bluez bluez-firmware nodejs mpv \
-  pipewire pipewire-audio wireplumber libspa-0.2-bluetooth
+# Split into smaller installs (not one big list) - keeps peak concurrent
+# dpkg postinst/trigger memory pressure down, same end result.
+sudo apt install -y python3-pip python3-pil python3-numpy i2c-tools rfkill
+sudo apt install -y ffmpeg mpv
+sudo apt install -y bluez bluez-firmware
+sudo apt install -y nodejs
+sudo apt install -y pipewire pipewire-audio wireplumber libspa-0.2-bluetooth
+
+# Remove the temporary swapfile again now that the heavy installs are done -
+# leaves the system back on its default (zram-only) setup.
+sudo swapoff "$SETUP_SWAPFILE"
+sudo rm -f "$SETUP_SWAPFILE"
 
 # --- i2c-dev module ---
 sudo modprobe i2c-dev
@@ -28,7 +57,17 @@ echo "i2c-dev" | sudo tee /etc/modules-load.d/i2c-dev.conf
 pip3 install --break-system-packages \
   luma.lcd luma.oled \
   adafruit-circuitpython-gc9a01a adafruit-blinka adafruit-blinka-displayio \
-  adafruit-circuitpython-neopixel smbus2 yt-dlp
+  adafruit-circuitpython-neopixel smbus2
+
+# yt-dlp specifically: --upgrade, and separate from the install above - piwheels
+# (the ARM wheel cache pip resolves against here) lags PyPI's source releases,
+# observed live installing a 17-month-old yt-dlp that silently extracted 0
+# videos from every playlist (YouTube changed its playlist page's internal
+# format; old yt-dlp warns "Unsupported lockup view model content type" and
+# just returns nothing instead of erroring). --upgrade forces pip to check for
+# and take a newer release instead of treating an already-satisfied old one as
+# done.
+pip3 install --break-system-packages --upgrade yt-dlp
 
 # --- GPIO16 soft-power-hold ---
 sudo tee /etc/systemd/system/gpio16-hold.service > /dev/null <<'EOF'
@@ -95,13 +134,13 @@ RemainAfterExit=yes
 WantedBy=multi-user.target
 EOF
 
-sudo cp Software/mp3player.service /etc/systemd/system/
-sudo cp Software/charge_control.service /etc/systemd/system/
+sudo cp "$SCRIPT_DIR/mp3player.service" /etc/systemd/system/
+sudo cp "$SCRIPT_DIR/charge_control.service" /etc/systemd/system/
 
 sudo systemctl daemon-reload
 sudo systemctl enable --now gpio16-hold.service
 sudo systemctl enable gpio16-poweroff.service
-sudo systemctl enable gpio9-pullup.service
+sudo systemctl enable --now gpio9-pullup.service
 sudo systemctl enable --now bluetooth-unblock.service
 sudo systemctl enable mp3player.service
 sudo systemctl enable charge_control.service
