@@ -227,8 +227,15 @@ class ThreadedPoller:
 
     def _run(self, interval):
         while True:
-            for event in self._target.poll():
-                self._events.put(event)
+            try:
+                for event in self._target.poll():
+                    self._events.put(event)
+            except OSError as e:
+                # Bus-wide I2C glitch (03.10.2026, mid-sync: SX1509 + QMI8658A
+                # failed in the same ms) used to kill this thread - buttons
+                # dead for the rest of the run. Skip the read, retry next tick.
+                print(f"buttonbox: I2C-Lesefehler, ignoriert: {e}", flush=True)
+                time.sleep(0.1)  # don't flood the journal if the bus stays down
             time.sleep(interval)
 
     def poll(self):

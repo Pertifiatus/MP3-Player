@@ -290,6 +290,27 @@ def test_genuine_reversal_after_the_suppression_window_still_fires():
         buttonbox.time.monotonic = original
 
 
+def test_threaded_poller_survives_i2c_error():
+    # 03.10.2026: one OSError from the bus used to kill the poller thread for good.
+    class Flaky:
+        calls = 0
+
+        def poll(self):
+            Flaky.calls += 1
+            if Flaky.calls == 1:
+                raise OSError(121, "Remote I/O error")
+            return [{"type": "button_down", "name": "x"}] if Flaky.calls == 2 else []
+
+    poller = buttonbox.ThreadedPoller(Flaky())
+    import time
+    deadline = time.monotonic() + 2
+    events = []
+    while not events and time.monotonic() < deadline:
+        events = poller.poll()
+        time.sleep(0.01)
+    assert events == [{"type": "button_down", "name": "x"}], events
+
+
 if __name__ == "__main__":
     tests = [v for k, v in list(globals().items()) if k.startswith("test_")]
     for t in tests:

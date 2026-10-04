@@ -44,6 +44,11 @@ CREDENTIALS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "you
 TOKEN_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "youtube_token.json")
 MUSIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "music")
 LIBRARY_MANIFEST_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "library.json")
+# Deno from PyPI (`pip3 install deno`, see setup_pi.sh) lands in ~/.local/bin,
+# which isn't on mp3player.service's PATH - hence the explicit path. apt's
+# nodejs (20.19) is rejected by yt-dlp as "unsupported" (confirmed live
+# 03.10.2026), so it can't be used as the JS runtime.
+DENO_PATH = shutil.which("deno") or os.path.expanduser("~/.local/bin/deno")
 # Netscape-format cookies.txt, exported from a browser logged into YouTube -
 # optional, only referenced if present (see _yt_dlp_cookie_opts()). Works
 # around "Sign in to confirm you're not a bot" on videos yt-dlp's normal
@@ -273,7 +278,10 @@ def sync_library(progress_callback, excluded=()):
     skip syncing entirely. A previously-synced excluded playlist keeps whatever
     it already has (carried forward as-is below) rather than disappearing from
     the library - excluding only opts out of *future* downloads, it isn't the
-    same as deleting (see delete_playlist())."""
+    same as deleting (see delete_playlist()).
+
+    Returns (failed, total): `failed` is [(video_id, error_message), ...] for
+    every track yt-dlp couldn't download."""
     if not is_account_linked():
         raise RuntimeError("Kein YouTube-Konto verknuepft")
     if not wifi_ok_for_sync():
@@ -287,12 +295,20 @@ def sync_library(progress_callback, excluded=()):
     video_ids_by_playlist = [_playlist_video_ids(pid) for pid, _, _ in playlists]
     total = sum(len(ids) for ids in video_ids_by_playlist)
 
-    manifest = [{"name": title, "cover": None, "tracks": []} for _, title, _ in playlists]
+    # Not-yet-reached playlists start out as their old manifest entry, so the
+    # per-track writes below never drop already-synced tracks from library.json
+    # if this sync gets cut off partway (power loss, crash).
+    manifest = [old_manifest_by_name.get(title, {"name": title, "cover": None, "tracks": []})
+                for _, title, _ in playlists]
+    manifest += [old_manifest_by_name[title] for _, title, _ in all_playlists
+                 if title in excluded and title in old_manifest_by_name]
+    failed = []  # (video_id, error message)
     i = 0
     for pl_idx, ((playlist_id, title, cover_url), video_ids) in enumerate(zip(playlists, video_ids_by_playlist)):
         out_dir = os.path.join(MUSIC_DIR, _safe_filename(title))
         os.makedirs(out_dir, exist_ok=True)
-        manifest[pl_idx]["cover"] = _download_image(cover_url, os.path.join(out_dir, "cover.jpg"))
+        manifest[pl_idx] = {"name": title, "tracks": [],
+                            "cover": _download_image(cover_url, os.path.join(out_dir, "cover.jpg"))}
 
         for video_id in video_ids:
             i += 1
@@ -326,11 +342,9 @@ def sync_library(progress_callback, excluded=()):
                 "max_sleep_interval": 20,
                 # Needed for videos whose formats are signature-protected - without
                 # it yt-dlp silently has fewer formats available and can fail
-                # entirely (~42% of a real playlist in testing). Deno is yt-dlp's
-                # own default runtime but isn't apt-installable on Raspberry Pi OS
-                # without a separate curl-based install script; Node.js is and
-                # is equally supported.
-                "js_runtimes": {"node": {}},
+                # entirely (~42% of a real playlist in testing). Also needs the
+                # yt-dlp-ejs package (pulled in by `yt-dlp[default]`).
+                "js_runtimes": {"deno": {"path": DENO_PATH}},
                 **_yt_dlp_cookie_opts(),
             }
             try:
@@ -347,17 +361,27 @@ def sync_library(progress_callback, excluded=()):
                     {"video_id": video_id, "title": track_title, "artist": artist, "duration": duration,
                      "file": file_path, "cover": cover_path}
                 )
+                _write_manifest(manifest)
                 progress_callback(i, total, f"{artist} - {track_title}")
-            except yt_dlp.DownloadError:
-                # region-locked/deleted/private-since-listed - skip, keep syncing
-                progress_callback(i, total, video_id)
+            except yt_dlp.DownloadError as e:
+                # region-locked/deleted/private-since-listed/rate-limited - skip,
+                # keep syncing, but count it: these used to vanish silently
+                # (23.09.2026: 2 of several hundred tracks actually landed).
+                failed.append((video_id, str(e)))
+                print(f"sync: {video_id} fehlgeschlagen: {e}", flush=True)
+                progress_callback(i, total, f"{video_id} (fehlgeschlagen)")
 
-    for _, title, _ in all_playlists:
-        if title in excluded and title in old_manifest_by_name:
-            manifest.append(old_manifest_by_name[title])
+    _write_manifest(manifest)
+    return failed, total
 
-    with open(LIBRARY_MANIFEST_PATH, "w") as f:
+
+def _write_manifest(manifest):
+    # tmp + rename: written after every track now, so a power cut mid-write
+    # must not leave a truncated library.json behind.
+    tmp = LIBRARY_MANIFEST_PATH + ".tmp"
+    with open(tmp, "w") as f:
         json.dump(manifest, f, indent=2)
+    os.replace(tmp, LIBRARY_MANIFEST_PATH)
 
 
 def delete_playlist(name):

@@ -25,9 +25,7 @@ sudo chmod 600 "$SETUP_SWAPFILE"
 sudo mkswap "$SETUP_SWAPFILE" > /dev/null
 sudo swapon "$SETUP_SWAPFILE"
 
-# nodejs: yt-dlp needs a JS runtime for signature-protected YouTube formats
-# (sync_youtube.py's js_runtimes option) - without it ~40% of a real
-# playlist's downloads fail silently.
+# (JS runtime for yt-dlp: deno via pip below, not apt's nodejs - too old.)
 # mpv: player.py's actual playback backend (see its own docstring) - without
 # it AudioPlayer can't even spawn, so nothing plays at all, BT or jack.
 # pipewire/pipewire-audio/wireplumber/libspa-0.2-bluetooth: player.py forces
@@ -41,7 +39,6 @@ sudo swapon "$SETUP_SWAPFILE"
 sudo apt install -y python3-pip python3-pil python3-numpy i2c-tools rfkill
 sudo apt install -y ffmpeg mpv
 sudo apt install -y bluez bluez-firmware
-sudo apt install -y nodejs
 sudo apt install -y pipewire pipewire-audio wireplumber libspa-0.2-bluetooth
 
 # Remove the temporary swapfile again now that the heavy installs are done -
@@ -67,7 +64,11 @@ pip3 install --break-system-packages \
 # just returns nothing instead of erroring). --upgrade forces pip to check for
 # and take a newer release instead of treating an already-satisfied old one as
 # done.
-pip3 install --break-system-packages --upgrade yt-dlp
+# [default] pulls in yt-dlp-ejs (the JS challenge solver scripts), deno is the
+# JS runtime that runs them - apt's nodejs (20.19) is too old, yt-dlp reports
+# it as "unsupported" and ~40% of downloads then fail. deno lands in
+# ~/.local/bin, sync_youtube.py's DENO_PATH points there.
+pip3 install --break-system-packages --upgrade "yt-dlp[default]" deno
 
 # --- GPIO16 soft-power-hold ---
 sudo tee /etc/systemd/system/gpio16-hold.service > /dev/null <<'EOF'

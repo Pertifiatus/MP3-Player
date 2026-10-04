@@ -156,10 +156,17 @@ class SyncWorker:
     def _sync_loop(self):
         try:
             excluded = self.state.settings.get("sync", "excluded_playlists")
-            sync_youtube.sync_library(self.state.sync_progress_callback, excluded=excluded)
-            ui_state.reload_library()
-        except RuntimeError as e:
+            failed, total = sync_youtube.sync_library(self.state.sync_progress_callback, excluded=excluded)
+            if failed:
+                self.state.sync_error = f"{len(failed)} von {total} Liedern fehlgeschlagen: {failed[0][1][:80]}"
+        except Exception as e:
+            # Not just RuntimeError: anything else (network timeout, unexpected
+            # yt-dlp output) used to kill this thread silently.
             self.state.sync_error = str(e)
+        finally:
+            # library.json is written per track, so even an aborted sync has
+            # something new to show.
+            ui_state.reload_library()
 
 
 class BTWorker:
@@ -576,7 +583,12 @@ def apply_motion_features(state):
     separate script) - the setting exists in Settings/UI already, but doesn't
     do anything yet. See NOTES_FOR_PER.md.
     """
-    accel = state.imu.read_accel_g()
+    try:
+        accel = state.imu.read_accel_g()
+    except OSError as e:
+        # transient I2C glitch - used to crash the whole app (and any running sync)
+        print(f"imu: I2C-Lesefehler, ignoriert: {e}", flush=True)
+        return False
     mag = magnitude(accel)
     dirty = False
 
