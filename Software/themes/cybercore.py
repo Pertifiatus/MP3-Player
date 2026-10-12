@@ -181,9 +181,7 @@ def draw_settings(view, ctx):
     n = len(view.rows)
     sel = max(0, min(view.sel, n - 1))
     f = _m(12, s)
-    for i, y, half, off in ui_common.list_rows(n, sel, 26 * s, center_y=128, min_half=60):
-        if y - 10 * s < HEADER_BOTTOM:
-            continue
+    for i, y, half, off in ui_common.window_rows(n, sel, HEADER_BOTTOM + 4, 202, 26 * s):
         row = view.rows[i]
         x0, x1 = 120 - half + 10, 120 + half - 10
         selected = off == 0

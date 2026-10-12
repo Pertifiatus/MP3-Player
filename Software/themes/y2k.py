@@ -296,10 +296,8 @@ def draw_settings(view, ctx):
     _header(img, draw, view.title, s)
     n = len(view.rows)
     sel = max(0, min(view.sel, n - 1))
-    for i, y, half, off in ui_common.list_rows(n, sel, 34 * s, center_y=128, min_half=56):
+    for i, y, half, off in ui_common.window_rows(n, sel, HEADER_BOTTOM + 2, 206, 34 * s):
         h = round(30 * s)
-        if y - h / 2 < HEADER_BOTTOM:
-            continue
         row = view.rows[i]
         selected = off == 0
         w = 2 * half - 24

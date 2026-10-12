@@ -101,7 +101,7 @@ def reload_library():
 
 # Einstellungen → Anzeige → Design. Every value needs a module in themes.THEMES
 # (test_ui_render.test_every_design_choice_has_a_theme guards that).
-THEME_CHOICES = [("klassik", "Klassik"), ("cybercore", "Cybercore"), ("y2k", "Y2K"), ("glass", "Glas")]
+THEME_CHOICES = [("klassik", "Klassik"), ("cybercore", "Cybercore"), ("y2k", "Y2K"), ("glass", "Glas"), ("neumorph", "Neumorph")]
 
 SETTINGS_CATEGORIES = [
     {"key": "display", "label": "Anzeige", "icon": "A"},

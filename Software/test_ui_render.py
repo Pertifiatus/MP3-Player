@@ -371,6 +371,16 @@ def test_glyph_safe_falls_back_to_ascii_for_missing_symbols():
     assert ui_common.font("PixelifySans[wght].ttf", 10).getlength(ui_common.fit(LONG, pixel, 60)) <= 60
 
 
+def test_window_rows_fill_from_the_top_and_keep_the_selection_visible():
+    # settings forms: rows start right under the header instead of centering the
+    # selection (which left the top half empty while the first row was selected)
+    rows = list(ui_common.window_rows(6, 0, top=60, bottom=200, pitch=30))
+    assert [i for i, _, _, _ in rows] == [0, 1, 2, 3] and rows[0][1] == 75
+    assert [i for i, _, _, _ in ui_common.window_rows(6, 5, top=60, bottom=200, pitch=30)] == [2, 3, 4, 5]
+    assert [i for i, _, _, _ in ui_common.window_rows(2, 1, top=60, bottom=200, pitch=30)] == [0, 1]
+    assert all(off == i - 3 for i, _, _, off in ui_common.window_rows(6, 3, top=60, bottom=200, pitch=30))
+
+
 def test_list_rows_stay_inside_the_round_safe_area():
     rows = list(ui_common.list_rows(60, 30, 40))
     assert [off for _, _, _, off in rows] == [-2, -1, 0, 1, 2]

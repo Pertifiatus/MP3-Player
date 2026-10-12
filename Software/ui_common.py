@@ -406,6 +406,18 @@ def list_rows(n, sel, pitch, center_y=W / 2, min_half=40):
             yield i, y, half, i - sel
 
 
+def window_rows(n, sel, top, bottom, pitch):
+    """Rows of a top-anchored scrolling list (settings forms): as many rows of
+    `pitch` as fit between top and bottom, scrolled so the selection stays in
+    view (centered once the list is long enough to scroll). Yields
+    (index, y_center, half_width, offset) like list_rows."""
+    visible = max(1, int((bottom - top) // pitch))
+    start = max(0, min(sel - visible // 2, n - visible))
+    for i in range(start, min(n, start + visible)):
+        y = top + (i - start + 0.5) * pitch
+        yield i, y, safe_half_width(y), i - sel
+
+
 def busy_phase(period=1.0, steps=4):
     """Animation step for busy indicators. Only advances where main.py already
     redraws periodically (BT/WLAN/Sync screens, ~2x/s) - no idle animation."""

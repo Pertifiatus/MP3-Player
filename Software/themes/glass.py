@@ -211,14 +211,7 @@ def draw_settings(view, ctx):
     n = len(view.rows)
     sel = max(0, min(view.sel, n - 1))
     pitch = 30 * s
-    # Fill the panel from its top and scroll around the selection (like Klassik's
-    # card) instead of centering, which left the panel's top half empty.
-    visible = max(1, int((panel[3] - panel[1] - 8) // pitch))
-    start = max(0, min(sel - visible // 2, n - visible))
-    for i in range(start, min(n, start + visible)):
-        off = i - sel
-        y = panel[1] + 4 + (i - start + 0.5) * pitch
-        half = _half(y)
+    for i, y, half, off in ui_common.window_rows(n, sel, panel[1] + 4, panel[3] - 4, pitch):
         row = view.rows[i]
         x0, x1 = max(panel[0] + 8, 120 - half + 10), min(panel[2] - 8, 120 + half - 10)
         if off == 0:
