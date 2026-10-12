@@ -4,10 +4,11 @@ the views from ui_views with its own layout; ui_render picks the active one.
 
 Adding a design: new module here + entry in THEMES + its choice in
 ui_state.THEME_CHOICES (test_ui_render checks both lists match)."""
-from themes import klassik
+from themes import cybercore, klassik
 
 THEMES = {
     "klassik": klassik,
+    "cybercore": cybercore,
 }
 
 

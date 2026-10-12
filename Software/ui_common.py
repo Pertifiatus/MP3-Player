@@ -302,7 +302,7 @@ _GLYPH_FALLBACK = {"→": "->", "←": "<-", "·": "-", "…": "...", "●": "*"
 
 @functools.lru_cache(maxsize=4096)
 def _has_glyph(f, ch):
-    notdef = f.getmask("￿")
+    notdef = f.getmask("\uFFFF")
     m = f.getmask(ch)
     return (m.size, bytes(m)) != (notdef.size, bytes(notdef))
 
@@ -313,22 +313,53 @@ def glyph_safe(text, f):
                    for c in str(text))
 
 
+@functools.lru_cache(maxsize=8192)
+def text_len(s, f):
+    """Cached advance width. Measuring is surprisingly slow for the heavily
+    hinted bundled fonts (ShareTechMono, Rajdhani: ~0.4 ms per call, measured),
+    and menus measure the same strings every frame."""
+    return f.getlength(s)
+
+
+@functools.lru_cache(maxsize=4096)
 def fit(text, f, max_w):
     """glyph_safe `text`, cut with an ellipsis so it is at most max_w px wide."""
     s = glyph_safe(text, f)
-    if f.getlength(s) <= max_w:
+    if text_len(s, f) <= max_w:
         return s
     ell = glyph_safe("…", f)
-    while s and f.getlength(s + ell) > max_w:
-        s = s[:-1]
-    return (s.rstrip() + ell) if s else ell
+    lo, hi = 0, len(s)  # binary search: longest prefix that fits with the ellipsis
+    while lo < hi:
+        mid = (lo + hi + 1) // 2
+        if text_len(s[:mid].rstrip() + ell, f) <= max_w:
+            lo = mid
+        else:
+            hi = mid - 1
+    return (s[:lo].rstrip() + ell) if lo else ell
+
+
+@functools.lru_cache(maxsize=1024)
+def _text_mask(s, f, anchor, mode):
+    """Rendered text as an L mask + its offset from the anchor point. Cached for
+    the same reason as text_len: rendering one line costs up to ~1.7 ms with the
+    hinted fonts, and most strings repeat from frame to frame."""
+    x0, y0, x1, y1 = f.getbbox(s, anchor=anchor)
+    m = Image.new("L", (max(1, x1 - x0), max(1, y1 - y0)), 0)
+    d = ImageDraw.Draw(m)
+    d.fontmode = mode
+    d.text((-x0, -y0), s, font=f, fill=255, anchor=anchor)
+    return m, x0, y0
 
 
 def text(draw, xy, s, f, fill, anchor="la", max_w=None):
-    """draw.text with glyph fallback (+ ellipsis fit if max_w). Returns the drawn width."""
+    """draw.text with glyph fallback (+ ellipsis fit if max_w), via the cached
+    mask above. Respects draw.fontmode ("1" = no antialiasing). Returns the
+    drawn width."""
     s = fit(s, f, max_w) if max_w is not None else glyph_safe(s, f)
-    draw.text(xy, s, font=f, fill=fill, anchor=anchor)
-    return f.getlength(s)
+    if s:
+        m, ox, oy = _text_mask(s, f, anchor, draw.fontmode)
+        draw.bitmap((round(xy[0] + ox), round(xy[1] + oy)), m, fill=fill)
+    return text_len(s, f)
 
 
 def wrap(text_, f, max_w, max_lines=None):
@@ -337,7 +368,7 @@ def wrap(text_, f, max_w, max_lines=None):
     words, lines, line = glyph_safe(text_, f).split(), [], ""
     for word in words:
         test = (line + " " + word).strip()
-        if f.getlength(test) > max_w and line:
+        if text_len(test, f) > max_w and line:
             lines.append(line)
             line = word
         else:
@@ -470,12 +501,12 @@ def draw_ring_status(img, sv, st):
     draw = ImageDraw.Draw(img)
     seg = st.get("segments", 0)
     if st.get("track") is not None:
-        _ring_band(img, draw, RING_FAR_DEG, RING_ANCHOR_DEG, st["track"], seg)
+        _ring_band(img, RING_FAR_DEG, RING_ANCHOR_DEG, st["track"], seg)
     if sv.battery_pct is not None:
         pct = max(0, min(100, round(sv.battery_pct)))
         if pct > 0:
             bound = RING_FAR_DEG + (RING_ANCHOR_DEG - RING_FAR_DEG) * pct / 100
-            _ring_band(img, draw, RING_FAR_DEG, bound, st.get("low", st["fill"]) if pct <= 20 else st["fill"], seg)
+            _ring_band(img, RING_FAR_DEG, bound, st.get("low", st["fill"]) if pct <= 20 else st["fill"], seg)
         if sv.charging:
             lightning_bolt(draw, *ring_point(180), 14, st.get("bolt", st["accent"]))
         if sv.show_labels:
@@ -492,25 +523,41 @@ def draw_ring_status(img, sv, st):
 
 
 def _ring_label(draw, x_center, y, s, f, fill):
-    s = glyph_safe(s, f)
-    draw.text((x_center - f.getlength(s) / 2, y), s, font=f, fill=fill)
+    text(draw, (x_center, y), s, f, fill, anchor="ma")
 
 
-def _ring_band(img, draw, a, b, color, segments):
+def _ring_band(img, a, b, color, segments):
     lo, hi = sorted((a, b))
+    img.paste(color, (0, 0, W, W), _band_mask(round(lo, 2), round(hi, 2), segments))
+
+
+@functools.lru_cache(maxsize=256)
+def _band_mask(lo, hi, segments):
+    """L mask of one ring band from lo to hi degrees: continuous with round caps,
+    or `segments` separated ticks. Cached and pasted once - drawing ~30
+    pieslices with a full-frame paste each per frame was the single biggest
+    render cost of a segmented ring (measured)."""
+    m = Image.new("L", (W, W), 0)
+    d = ImageDraw.Draw(m)
+    outer = RING_R + RING_WIDTH / 2
+    box = [W / 2 - outer, W / 2 - outer, W / 2 + outer, W / 2 + outer]
     if not segments:
-        ring_arc(img, lo, hi, color)
+        d.pieslice(box, lo, hi, fill=255)
+    else:
+        span = (RING_ANCHOR_DEG - RING_FAR_DEG) / segments
+        for k in range(segments):
+            s0 = max(lo, RING_FAR_DEG + k * span + 1.2)
+            s1 = min(hi, RING_FAR_DEG + (k + 1) * span - 1.2)
+            if s1 > s0:
+                d.pieslice(box, s0, s1, fill=255)
+    inner = RING_R - RING_WIDTH / 2
+    d.ellipse([W / 2 - inner, W / 2 - inner, W / 2 + inner, W / 2 + inner], fill=0)
+    if not segments:
         cap = RING_WIDTH / 2
         for deg in (lo, hi):
             x, y = ring_point(deg)
-            draw.ellipse([x - cap, y - cap, x + cap, y + cap], fill=color)
-        return
-    span = (RING_ANCHOR_DEG - RING_FAR_DEG) / segments
-    for k in range(segments):
-        s0 = max(lo, RING_FAR_DEG + k * span + 1.2)
-        s1 = min(hi, RING_FAR_DEG + (k + 1) * span - 1.2)
-        if s1 > s0:
-            ring_arc(img, s0, s1, color)
+            d.ellipse([x - cap, y - cap, x + cap, y + cap], fill=255)
+    return m
 
 
 def _ring_dot(draw, deg, color, off_color, on, connected, shape):
