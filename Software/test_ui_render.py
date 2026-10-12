@@ -13,6 +13,7 @@ import tempfile
 from settings import Settings
 import ui_render
 import ui_state
+from themes import klassik
 
 
 def make_state():
@@ -237,14 +238,14 @@ def test_quick_connect_overlay_survives_qc_phase_reset_mid_render():
 
 def test_windowed_range_bounds_and_clamping():
     # normal case: selection well inside a long list - full window both sides
-    assert ui_render._windowed_range(60, 30) == (27, 34)
+    assert klassik._windowed_range(60, 30) == (27, 34)
     # near the start - clamps at 0 instead of going negative
-    assert ui_render._windowed_range(60, 0) == (0, 4)
-    assert ui_render._windowed_range(60, 2) == (0, 6)
+    assert klassik._windowed_range(60, 0) == (0, 4)
+    assert klassik._windowed_range(60, 2) == (0, 6)
     # near the end - clamps at n instead of overrunning
-    assert ui_render._windowed_range(60, 59) == (56, 60)
+    assert klassik._windowed_range(60, 59) == (56, 60)
     # list shorter than the window on both sides - covers everything
-    assert ui_render._windowed_range(5, 2) == (0, 5)
+    assert klassik._windowed_range(5, 2) == (0, 5)
 
 
 def test_playlist_render_windows_a_long_list_at_every_scroll_position():

@@ -10,6 +10,7 @@ DEFAULTS = {
         "auto_sleep_s": 30,  # 0 = never sleep
         "ui_scale": 3,       # 1-5, index into ui_render.UI_SCALE_STEPS
         "status_ring": "home",  # "home" / "always" - see ui_state.UIState.status_ring_visible()
+        "theme": "klassik",  # see themes/__init__.py - Einstellungen → Anzeige → Design
     },
     "led": {
         "enabled": True,
