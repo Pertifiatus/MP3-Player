@@ -98,6 +98,11 @@ def reload_library():
 
 # --- settings schema (declarative, drives both render + activation) ----------
 # type: toggle | stepper (min/max int) | choice (list of (value,label)) | action | info
+
+# Einstellungen → Anzeige → Design. Every value needs a module in themes.THEMES
+# (test_ui_render.test_every_design_choice_has_a_theme guards that).
+THEME_CHOICES = [("klassik", "Klassik"), ("cybercore", "Cybercore"), ("y2k", "Y2K"), ("glass", "Glas"), ("neumorph", "Neumorph"), ("bento", "Bento"), ("pixelhaus", "Pixelhaus"), ("cyberpunk", "Cyberpunk")]
+
 SETTINGS_CATEGORIES = [
     {"key": "display", "label": "Anzeige", "icon": "A"},
     {"key": "led", "label": "LED", "icon": "L"},
@@ -109,6 +114,7 @@ SETTINGS_CATEGORIES = [
 
 SETTINGS_ITEMS = {
     "display": [
+        {"key": "theme", "label": "Design", "type": "choice", "choices": THEME_CHOICES},
         {"key": "brightness", "label": "Helligkeit", "type": "stepper", "min": 1, "max": 5},
         {"key": "ui_scale", "label": "UI-Groesse", "type": "stepper", "min": 1, "max": 5},
         {"key": "auto_sleep_s", "label": "Auto-Aus", "type": "choice",
