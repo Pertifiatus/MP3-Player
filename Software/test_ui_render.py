@@ -388,6 +388,44 @@ def test_list_rows_stay_inside_the_round_safe_area():
     assert [i for i, _, _, _ in ui_common.list_rows(3, 0, 40)] == [0, 1, 2]
 
 
+def test_pixelhaus_camera_snaps_first_then_flies_and_settles():
+    from themes import pixelhaus
+    clock = [100.0]
+    old_clock, old_cam = pixelhaus._clock, pixelhaus._CAM
+    pixelhaus._clock, pixelhaus._CAM = (lambda: clock[0]), pixelhaus.Camera()
+    try:
+        s = make_state()
+        s.settings.set("display", "theme", "pixelhaus")
+        ui_render.render(s)
+        assert not ui_render.animating(s)        # first frame: no flight from nowhere
+        s.screen = ui_state.SCREEN_SETTINGS_ROOT
+        ui_render.render(s)
+        assert ui_render.animating(s)            # floats from the living room to the workshop
+        clock[0] += 0.2
+        ui_render.render(s)
+        assert ui_render.animating(s)
+        clock[0] += 5.0                          # e.g. screen was off meanwhile
+        ui_render.render(s)
+        assert not ui_render.animating(s)        # arrived; resting frame drawn
+    finally:
+        pixelhaus._clock, pixelhaus._CAM = old_clock, old_cam
+
+
+def test_pixelhaus_renders_without_its_asset():
+    # Review Focus 4: assets/pixelhaus.png not deployed
+    from themes import pixelhaus
+    old = pixelhaus.ASSET_PATH
+    pixelhaus.ASSET_PATH = "gibt/es/nicht.png"
+    pixelhaus._house.cache_clear()
+    try:
+        s = make_state()
+        s.settings.set("display", "theme", "pixelhaus")
+        _walk_all_screens(s)
+    finally:
+        pixelhaus.ASSET_PATH = old
+        pixelhaus._house.cache_clear()
+
+
 if __name__ == "__main__":
     tests = [v for k, v in list(globals().items()) if k.startswith("test_")]
     for t in tests:
