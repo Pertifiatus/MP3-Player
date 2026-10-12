@@ -33,6 +33,10 @@ Python on Raspberry Pi OS, running as systemd services:
 | `sync_youtube.py` | YouTube Music library sync |
 | `connectivity.py` | WiFi / Bluetooth connections |
 | `ui_state.py`, `ui_render.py` | UI state machine and rendering |
+| `ui_views.py`, `ui_common.py` | Screen content as plain data, shared drawing helpers |
+| `themes/` | 8 switchable designs (Einstellungen → Anzeige → Design): Klassik, Cybercore, Y2K, Glas, Neumorph, Bento, Pixelhaus, Cyberpunk |
+| `preview_themes.py` | Preview sheet per design (`previews/`), `--bench` render timings |
+| `fonts/`, `assets/` | Bundled OFL fonts, Pixelhaus house image |
 | `buttonbox.py`, `qmi8658.py`, `es8388.py`, `max17048.py`, `rt9466.py` | Hardware drivers |
 | `charge_control.py`, `power_button.py` | Charging logic and soft shutdown |
 | `led_control.py`, `led_service.py` | Status ring LEDs |
@@ -49,5 +53,5 @@ Work in progress. Board 2 boots reliably; the software bring-up and debugging of
 CAD/        Fusion 360 case
 KiCad/      Main board + ButtonBox (schematics, PCB, 3D models)
 Software/   Python application, drivers, services, tests
-docs/       Design specs and plans (status ring, quick connect)
+docs/       Design specs and plans (status ring, quick connect, design themes)
 ```
