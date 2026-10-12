@@ -14,7 +14,10 @@ from settings import Settings
 import ui_render
 import ui_state
 import themes
+import ui_common
 from themes import klassik
+from ui_views import (CodeView, Item, ListView, MessageView, PasswordView, PlayingView, ProgressView,
+                      QuickConnectView, RenderCtx, SettingRow, SettingsView, StatusView)
 
 
 def make_state():
@@ -299,6 +302,80 @@ def test_unknown_design_falls_back_to_klassik():
     s.settings_category = "display"
     s.screen = ui_state.SCREEN_SETTINGS_DETAIL
     _assert_frame(ui_render.render(s))  # "Design" row shows the raw value, no StopIteration
+
+
+LONG = ("Ein extrem langer Titel, der garantiert in keine Zeile passt - Umlaute ÄÖÜ äöü ß, "
+        "Pfeil → und Punkt · und noch mehr Text dahinter")
+
+
+def _edge_views():
+    """Review Focus 2 + 3: long strings, tiny/huge lists, impossible numbers."""
+    cover = (None, "edge", "#FF6157")
+    yield ListView(ui_state.SCREEN_LIBRARY, LONG, [Item(LONG, LONG, "♪", "playlist", "accent", cover)], 0)
+    yield ListView(ui_state.SCREEN_PLAYLIST, "T", [Item(f"Track {i}", "A · 3:00", kind="track",
+                                                        cover=(None, f"t{i}", "#2F8CFF")) for i in range(60)], 59)
+    yield ListView(ui_state.SCREEN_HOME, "Mini-Musikplayer", [Item("Bibliothek", "", "♪", "library")], 0)
+    yield ListView(ui_state.SCREEN_SETTINGS_ROOT, "Einstellungen",
+                   [Item(c["label"], "", c["icon"], c["key"]) for c in ui_state.SETTINGS_CATEGORIES], 5)
+    yield ListView(ui_state.SCREEN_BT_MENU, "Bluetooth", [Item("Bluetooth", "An", "B", "toggle", "accent"),
+                                                          Item(LONG, LONG, "B", "device", "muted"),
+                                                          Item("Neue Geraete koppeln", "", "+", "pair_new", "danger")], 2)
+    for mood in ("busy", "error", "success", "info"):
+        yield MessageView(ui_state.SCREEN_WIFI_PASSWORD, LONG, mood, LONG, detail=LONG, hint=LONG, subtitle=LONG)
+        yield MessageView(ui_state.SCREEN_BT_PAIRING, "Bluetooth", mood, "Kurz")
+    yield SettingsView(ui_state.SCREEN_SETTINGS_DETAIL, LONG, "display",
+                       [SettingRow(LONG, "choice", LONG, on=True), SettingRow("Stufe", "stepper", 9, max=5, on=True),
+                        SettingRow("An", "toggle", True), SettingRow(LONG, "info", LONG),
+                        SettingRow("Konto", "action", "Verbinden →")], 4)
+    yield SettingsView(ui_state.SCREEN_SETTINGS_DETAIL, "Über", "about", [SettingRow("Version", "info", "Rev 1")], 0)
+    yield PlayingView(ui_state.SCREEN_PLAYING, LONG, LONG, LONG, 0, "#FF6157", cover, 0.0, 0.0, False, True)
+    yield PlayingView(ui_state.SCREEN_PLAYING, "A", "B", "C", 7, "#8B7CF6", cover, 500.0, 200.0, True, False)
+    yield CodeView(ui_state.SCREEN_SYNC_LOGIN, LONG, "https://www.google.com/device?" + "x" * 80, "ABCD-EFGH-IJKL")
+    yield ProgressView(ui_state.SCREEN_SYNC_PROGRESS, LONG, 0, 0, LONG, False)
+    yield ProgressView(ui_state.SCREEN_SYNC_PROGRESS, "Sync", 12, 10, "", True)
+    yield PasswordView(ui_state.SCREEN_WIFI_PASSWORD, LONG, LONG, "x" * 80, ui_state.WIFI_CHARSET, 0, LONG)
+    yield PasswordView(ui_state.SCREEN_WIFI_PASSWORD, "WLAN-Passwort", "", "", ui_state.WIFI_CHARSET,
+                       len(ui_state.WIFI_CHARSET) - 1, "")
+
+
+def test_every_design_survives_edge_case_views():
+    status = StatusView(5, True, 12.0, None, True, True, False, False, True)
+    qc = QuickConnectView("error", 1.0, LONG, True)
+    for name, theme in themes.THEMES.items():
+        for scale in (ui_render.UI_SCALE_STEPS[1], ui_render.UI_SCALE_STEPS[5]):
+            ctx = RenderCtx(scale, status)
+            for v in _edge_views():
+                img = getattr(theme, "draw_" + v.KIND)(v, ctx)
+                assert img.size == (ui_render.W, ui_render.W), (name, v.KIND)
+                theme.draw_status(img, status, ctx)
+                theme.draw_quick_connect(img, qc, ctx)
+
+
+def test_font_loader_never_raises_for_missing_files():
+    # Review Focus 4: fonts/ not copied to the Pi
+    f = ui_common.font("GibtEsNicht.ttf", 14, weight=700)
+    assert f.getlength("abc") > 0
+
+
+def test_variable_font_weight_is_applied():
+    regular = ui_common.font("Nunito[wght].ttf", 20)
+    bold = ui_common.font("Nunito[wght].ttf", 20, weight=800)
+    assert bold.getlength("Bibliothek") > regular.getlength("Bibliothek")
+
+
+def test_glyph_safe_falls_back_to_ascii_for_missing_symbols():
+    # Review Focus 5: PixelifySans has no arrow, keeps umlauts
+    pixel = ui_common.font("PixelifySans[wght].ttf", 10)
+    assert ui_common.glyph_safe("Verbinden → Über", pixel) == "Verbinden -> Über"
+    assert ui_common.fit(LONG, pixel, 60).endswith(("…", "..."))
+    assert ui_common.font("PixelifySans[wght].ttf", 10).getlength(ui_common.fit(LONG, pixel, 60)) <= 60
+
+
+def test_list_rows_stay_inside_the_round_safe_area():
+    rows = list(ui_common.list_rows(60, 30, 40))
+    assert [off for _, _, _, off in rows] == [-2, -1, 0, 1, 2]
+    assert all(half >= 40 for _, _, half, _ in rows)
+    assert [i for i, _, _, _ in ui_common.list_rows(3, 0, 40)] == [0, 1, 2]
 
 
 if __name__ == "__main__":

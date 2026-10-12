@@ -257,3 +257,270 @@ def cover_art(seed, color_a_hex, color_b_hex, size=210):
 
     _cover_cache[cache_key] = img
     return img
+
+
+# =============================================================================
+# Toolkit for the designs in themes/ (Klassik keeps its own DejaVu helpers above
+# so it stays pixel-identical).
+# =============================================================================
+import time
+
+FONT_DIR = os.path.join(HERE, "fonts")
+_DEJAVU = "/usr/share/fonts/truetype/dejavu/"
+
+
+@functools.lru_cache(maxsize=None)
+def font(file, size, weight=None):
+    """Bundled font from fonts/ (OFL, see fonts/*-OFL.txt). `weight` (e.g. 700)
+    only matters for variable fonts ("[wght]" in the file name). Never raises:
+    a missing/unreadable file falls back to DejaVu (always on the Pi) or PIL's
+    own default font - a forgotten font copy must not take the UI down."""
+    size = max(6, round(size))
+    try:
+        f = ImageFont.truetype(os.path.join(FONT_DIR, file), size)
+        if weight is not None:
+            try:
+                f.set_variation_by_axes([weight])
+            except (OSError, ValueError, AttributeError):
+                pass  # static font, or a FreeType build without variation support
+        return f
+    except OSError:
+        pass
+    try:
+        return ImageFont.truetype(_DEJAVU + ("DejaVuSans-Bold.ttf" if (weight or 0) >= 600 else "DejaVuSans.ttf"), size)
+    except OSError:
+        try:
+            return ImageFont.load_default(size)
+        except TypeError:  # Pillow < 10.1
+            return ImageFont.load_default()
+
+
+# Symbols our UI strings use that several bundled fonts lack (tofu boxes otherwise).
+_GLYPH_FALLBACK = {"→": "->", "←": "<-", "·": "-", "…": "...", "●": "*", "○": "o", "■": "#", "□": "-",
+                   "▶": ">", "♪": "~", "⚙": "*", "␣": "_", "✦": "*", "❚": "|", "–": "-", "—": "-"}
+
+
+@functools.lru_cache(maxsize=4096)
+def _has_glyph(f, ch):
+    notdef = f.getmask("￿")
+    m = f.getmask(ch)
+    return (m.size, bytes(m)) != (notdef.size, bytes(notdef))
+
+
+def glyph_safe(text, f):
+    """`text` with symbols missing from font `f` replaced by ASCII stand-ins."""
+    return "".join(c if c.isascii() or c not in _GLYPH_FALLBACK or _has_glyph(f, c) else _GLYPH_FALLBACK[c]
+                   for c in str(text))
+
+
+def fit(text, f, max_w):
+    """glyph_safe `text`, cut with an ellipsis so it is at most max_w px wide."""
+    s = glyph_safe(text, f)
+    if f.getlength(s) <= max_w:
+        return s
+    ell = glyph_safe("…", f)
+    while s and f.getlength(s + ell) > max_w:
+        s = s[:-1]
+    return (s.rstrip() + ell) if s else ell
+
+
+def text(draw, xy, s, f, fill, anchor="la", max_w=None):
+    """draw.text with glyph fallback (+ ellipsis fit if max_w). Returns the drawn width."""
+    s = fit(s, f, max_w) if max_w is not None else glyph_safe(s, f)
+    draw.text(xy, s, font=f, fill=fill, anchor=anchor)
+    return f.getlength(s)
+
+
+def wrap(text_, f, max_w, max_lines=None):
+    """Word-wrapped lines (glyph-safe), each <= max_w; the last kept line gets an
+    ellipsis when max_lines cuts the rest off."""
+    words, lines, line = glyph_safe(text_, f).split(), [], ""
+    for word in words:
+        test = (line + " " + word).strip()
+        if f.getlength(test) > max_w and line:
+            lines.append(line)
+            line = word
+        else:
+            line = test
+    if line:
+        lines.append(line)
+    lines = [fit(l, f, max_w) for l in lines]
+    if max_lines is not None and len(lines) > max_lines:
+        lines = lines[:max_lines]
+        lines[-1] = fit(lines[-1] + glyph_safe("…", f), f, max_w)
+    return lines
+
+
+@functools.lru_cache(maxsize=32)
+def circle_mask(d):
+    m = Image.new("L", (int(d), int(d)), 0)
+    ImageDraw.Draw(m).ellipse([0, 0, int(d) - 1, int(d) - 1], fill=255)
+    return m
+
+
+@functools.lru_cache(maxsize=64)
+def rounded_mask(w, h, r):
+    m = Image.new("L", (int(w), int(h)), 0)
+    ImageDraw.Draw(m).rounded_rectangle([0, 0, int(w) - 1, int(h) - 1], radius=int(r), fill=255)
+    return m
+
+
+def list_rows(n, sel, pitch, center_y=W / 2, min_half=40):
+    """Rows of a selection-centered vertical list that land inside the round safe
+    area: yields (index, y_center, half_width, offset), offset = index - sel."""
+    for i in range(max(0, sel - 4), min(n, sel + 5)):
+        y = center_y + (i - sel) * pitch
+        half = safe_half_width(y)
+        if half >= min_half:
+            yield i, y, half, i - sel
+
+
+def busy_phase(period=1.0, steps=4):
+    """Animation step for busy indicators. Only advances where main.py already
+    redraws periodically (BT/WLAN/Sync screens, ~2x/s) - no idle animation."""
+    return int(time.monotonic() / period * steps) % steps
+
+
+# --- vector icons ---------------------------------------------------------------
+# Shapes, never Unicode glyphs: several symbols are missing from the bundled
+# fonts and DejaVu (see NOTES_FOR_PER.md). `size` = icon height in px.
+ICON_FOR_KIND = {
+    "library": "note", "playlist": "note", "manage_playlist": "note", "track": "note",
+    "resume": "play", "settings": "gear", "pair_new": "plus", "connect_new": "plus",
+    "wake": "wifi", "network": "wifi", "scan_network": "wifi", "device": "bt", "scan_device": "bt",
+    "exclude": "sync", "delete": "warn", "remove": "warn", "forget": "warn",
+    "display": "sun", "led": "bulb", "connectivity": "wifi", "sync": "sync", "motion": "wave", "about": "info",
+}
+
+
+def icon_for(item, screen):
+    """Icon name for a list Item. The BT/WLAN on-off toggle and the per-device
+    connect action share kinds across both menus, so those go by screen."""
+    if item.kind in ("toggle", "connect_toggle"):
+        return "bt" if screen.startswith("bt_") else "wifi"
+    return ICON_FOR_KIND.get(item.kind, "dot")
+
+
+def icon(draw, name, cx, cy, size, color):
+    s = size / 16.0
+    lw = max(1, round(1.6 * s))
+
+    def p(x, y):
+        return (cx + x * s, cy + y * s)
+
+    if name == "note":
+        draw.ellipse([*p(-6, 2), *p(-0.5, 7)], fill=color)
+        draw.line([p(-1.2, 4.5), p(-1.2, -7)], fill=color, width=lw)
+        draw.polygon([p(-1.2, -7), p(5, -4), p(5, -1), p(-1.2, -4)], fill=color)
+    elif name == "play":
+        draw.polygon([p(-5, -7), p(7, 0), p(-5, 7)], fill=color)
+    elif name == "pause":
+        draw.rectangle([*p(-6, -7), *p(-2, 7)], fill=color)
+        draw.rectangle([*p(2, -7), *p(6, 7)], fill=color)
+    elif name == "gear":
+        pts = [p((8 if k % 2 == 0 else 5.8) * math.cos(math.pi * k / 8),
+                 (8 if k % 2 == 0 else 5.8) * math.sin(math.pi * k / 8)) for k in range(16)]
+        draw.polygon(pts, outline=color, width=lw)
+        draw.ellipse([*p(-2.5, -2.5), *p(2.5, 2.5)], outline=color, width=lw)
+    elif name == "plus":
+        draw.line([p(-7, 0), p(7, 0)], fill=color, width=lw + 1)
+        draw.line([p(0, -7), p(0, 7)], fill=color, width=lw + 1)
+    elif name == "wifi":
+        for r in (4, 8, 12):
+            draw.arc([*p(-r, 6 - r), *p(r, 6 + r)], 225, 315, fill=color, width=lw)
+        draw.ellipse([*p(-1.6, 4.4), *p(1.6, 7.6)], fill=color)
+    elif name == "bt":
+        draw.line([p(-4, -4), p(4, 4), p(0, 8), p(0, -8), p(4, -4), p(-4, 4)], fill=color, width=lw, joint="curve")
+    elif name == "sync":
+        draw.arc([*p(-7, -7), *p(7, 7)], 200, 340, fill=color, width=lw)
+        draw.arc([*p(-7, -7), *p(7, 7)], 20, 160, fill=color, width=lw)
+        draw.polygon([p(7.5, -4.5), p(3.5, -3), p(7, 0)], fill=color)
+        draw.polygon([p(-7.5, 4.5), p(-3.5, 3), p(-7, 0)], fill=color)
+    elif name == "warn":
+        draw.polygon([p(0, -8), p(8, 7), p(-8, 7)], outline=color, width=lw)
+        draw.line([p(0, -3), p(0, 2.5)], fill=color, width=lw)
+        draw.ellipse([*p(-1, 4), *p(1, 6)], fill=color)
+    elif name == "sun":
+        draw.ellipse([*p(-3.5, -3.5), *p(3.5, 3.5)], fill=color)
+        for k in range(8):
+            a = math.pi * k / 4
+            draw.line([p(5.5 * math.cos(a), 5.5 * math.sin(a)), p(8 * math.cos(a), 8 * math.sin(a))],
+                      fill=color, width=lw)
+    elif name == "bulb":
+        draw.ellipse([*p(-5.5, -8), *p(5.5, 3)], outline=color, width=lw)
+        draw.rectangle([*p(-3, 3), *p(3, 7)], fill=color)
+    elif name == "wave":
+        draw.line([p(x / 2, 5 * math.sin(x / 2 * 0.55)) for x in range(-16, 17)], fill=color, width=lw)
+    elif name == "info":
+        draw.ellipse([*p(-8, -8), *p(8, 8)], outline=color, width=lw)
+        draw.ellipse([*p(-1.2, -5.5), *p(1.2, -3.1)], fill=color)
+        draw.line([p(0, -1.5), p(0, 5)], fill=color, width=lw + 1)
+    else:  # "dot"
+        draw.ellipse([*p(-3, -3), *p(3, 3)], fill=color)
+
+
+# --- status ring in a design's own style --------------------------------------------
+
+def draw_ring_status(img, sv, st):
+    """Battery arc + WLAN/BT dots + %/ETA labels at the shared, hardware-tuned
+    RING_* geometry, styled by dict `st`:
+      fill, off, wifi, bt, text, accent, font   required
+      track (None = no track), low (<= 20 %), bolt, segments (0 = continuous
+      with round caps), dot ("circle" | "square" | "diamond")."""
+    draw = ImageDraw.Draw(img)
+    seg = st.get("segments", 0)
+    if st.get("track") is not None:
+        _ring_band(img, draw, RING_FAR_DEG, RING_ANCHOR_DEG, st["track"], seg)
+    if sv.battery_pct is not None:
+        pct = max(0, min(100, round(sv.battery_pct)))
+        if pct > 0:
+            bound = RING_FAR_DEG + (RING_ANCHOR_DEG - RING_FAR_DEG) * pct / 100
+            _ring_band(img, draw, RING_FAR_DEG, bound, st.get("low", st["fill"]) if pct <= 20 else st["fill"], seg)
+        if sv.charging:
+            lightning_bolt(draw, *ring_point(180), 14, st.get("bolt", st["accent"]))
+        if sv.show_labels:
+            f = st["font"]
+            px, py = ring_point(RING_ANCHOR_DEG, r=100)
+            _ring_label(draw, px + 10, py - f.size - 2, f"{pct}%", f, st["text"])
+            if sv.charging and sv.watts is not None:
+                _ring_label(draw, px, py, f"{round(sv.watts)}W", f, st["accent"])
+            elif not sv.charging and sv.eta_min is not None:
+                _ring_label(draw, px, py, format_eta(sv.eta_min), f, st["text"])
+    shape = st.get("dot", "circle")
+    _ring_dot(draw, WIFI_DOT_DEG, st["wifi"], st["off"], sv.wifi_on, sv.wifi_connected, shape)
+    _ring_dot(draw, BT_DOT_DEG, st["bt"], st["off"], sv.bt_on, sv.bt_connected, shape)
+
+
+def _ring_label(draw, x_center, y, s, f, fill):
+    s = glyph_safe(s, f)
+    draw.text((x_center - f.getlength(s) / 2, y), s, font=f, fill=fill)
+
+
+def _ring_band(img, draw, a, b, color, segments):
+    lo, hi = sorted((a, b))
+    if not segments:
+        ring_arc(img, lo, hi, color)
+        cap = RING_WIDTH / 2
+        for deg in (lo, hi):
+            x, y = ring_point(deg)
+            draw.ellipse([x - cap, y - cap, x + cap, y + cap], fill=color)
+        return
+    span = (RING_ANCHOR_DEG - RING_FAR_DEG) / segments
+    for k in range(segments):
+        s0 = max(lo, RING_FAR_DEG + k * span + 1.2)
+        s1 = min(hi, RING_FAR_DEG + (k + 1) * span - 1.2)
+        if s1 > s0:
+            ring_arc(img, s0, s1, color)
+
+
+def _ring_dot(draw, deg, color, off_color, on, connected, shape):
+    """Off wins over a stale "connected" (StatusWorker polls only every ~10 s)."""
+    x, y = ring_point(deg)
+    r = DOT_R
+    fill, outline = (off_color, None) if not on else ((color, None) if connected else (None, color))
+    if shape == "diamond":
+        draw.polygon([(x, y - r), (x + r, y), (x, y + r), (x - r, y)], fill=fill, outline=outline)
+    elif shape == "square":
+        draw.rectangle([x - r + 1, y - r + 1, x + r - 1, y + r - 1], fill=fill, outline=outline, width=2)
+    else:
+        draw.ellipse([x - r, y - r, x + r, y + r], fill=fill, outline=outline, width=2)
