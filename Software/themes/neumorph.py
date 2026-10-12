@@ -245,14 +245,17 @@ def draw_message(view, ctx):
     _paste(img, _raised(84, 84, 42), 78, 64)
     draw = ImageDraw.Draw(img)
     _mood_icon(draw, 120, 106, view.mood)
-    _emboss(draw, (120, 164), view.text, _nf(14, s, 800), TEXT, max_w=170)
+    _emboss(draw, (120, 160), view.text, _nf(14, s, 800), TEXT, max_w=170)
     f = _nf(11, s, 600)
-    y = 180
-    for ln in ui_common.wrap(view.detail or view.hint, f, 2 * _half(y + 16) - 24, 2):
+    y = 175
+    # One detail line when there is a hint: the hint ("Play: erneut versuchen" -
+    # the only retry instruction) must still fit above the narrow bottom of the
+    # circle, at a fixed size regardless of UI-Groesse.
+    for ln in ui_common.wrap(view.detail or view.hint, f, 2 * _half(y + 16) - 24, 1 if view.detail and view.hint else 2):
         ui_common.text(draw, (120, y), ln, f, DIM, anchor="ma")
         y += f.size + 3
     if view.detail and view.hint:
-        ui_common.text(draw, (120, y + 2), view.hint, _nf(10, s, 600), DIM, anchor="ma", max_w=2 * _half(y + 10) - 24)
+        ui_common.text(draw, (120, y + 1), view.hint, _nf(10, 1, 600), DIM, anchor="ma", max_w=2 * _half(y + 8) - 16)
     return img
 
 

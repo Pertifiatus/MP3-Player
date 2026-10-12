@@ -160,7 +160,10 @@ def _scene(view):
     x, y, z, arrived = _CAM.frame(now)
     if arrived:
         _CAM.settled = True
-    return _crop(x, y, z), arrived
+    # The dialog only hides while floating to another room. A short move - the
+    # drift while scrolling Home/Werkstatt, Bibliothek -> Regal - keeps it on
+    # screen, otherwise every encoder detent would blank the menu for 0.4 s.
+    return _crop(x, y, z), arrived or _CAM.dist < Camera.ZOOM_MIN_DIST
 
 
 # --- pixel UI ---------------------------------------------------------------------------

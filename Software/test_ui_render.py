@@ -7,8 +7,11 @@ truncation, etc.) from a normal dev machine.
 
 python3 test_ui_render.py
 """
+import contextlib
 import os
 import tempfile
+
+from PIL import ImageChops
 
 from settings import Settings
 import ui_render
@@ -215,12 +218,13 @@ def _walk_all_screens(s):
 
 
 def test_all_screens_render_at_every_scale_in_every_design():
-    for theme in themes.THEMES:
-        for scale_step in ui_render.UI_SCALE_STEPS:
-            s = make_state()
-            s.settings.set("display", "theme", theme)
-            s.settings.set("display", "ui_scale", scale_step)
-            _walk_all_screens(s)
+    with _instant_camera():
+        for theme in themes.THEMES:
+            for scale_step in ui_render.UI_SCALE_STEPS:
+                s = make_state()
+                s.settings.set("display", "theme", theme)
+                s.settings.set("display", "ui_scale", scale_step)
+                _walk_all_screens(s)
 
 
 def test_quick_connect_overlay_renders_every_phase():
@@ -341,14 +345,17 @@ def _edge_views():
 def test_every_design_survives_edge_case_views():
     status = StatusView(5, True, 12.0, None, True, True, False, False, True)
     qc = QuickConnectView("error", 1.0, LONG, True)
-    for name, theme in themes.THEMES.items():
-        for scale in (ui_render.UI_SCALE_STEPS[1], ui_render.UI_SCALE_STEPS[5]):
-            ctx = RenderCtx(scale, status)
-            for v in _edge_views():
-                img = getattr(theme, "draw_" + v.KIND)(v, ctx)
-                assert img.size == (ui_render.W, ui_render.W), (name, v.KIND)
-                theme.draw_status(img, status, ctx)
-                theme.draw_quick_connect(img, qc, ctx)
+    with _instant_camera():
+        for name, theme in themes.THEMES.items():
+            for scale in (ui_render.UI_SCALE_STEPS[1], ui_render.UI_SCALE_STEPS[5]):
+                ctx = RenderCtx(scale, status)
+                for v in _edge_views():
+                    img = getattr(theme, "draw_" + v.KIND)(v, ctx)
+                    assert img.size == (ui_render.W, ui_render.W), (name, v.KIND)
+                    if name == "pixelhaus":  # its dialog only draws once the camera landed - make sure it ran
+                        assert img.getpixel((120, 203)) == theme.BOX_EDGE, v.KIND
+                    theme.draw_status(img, status, ctx)
+                    theme.draw_quick_connect(img, qc, ctx)
 
 
 def test_font_loader_never_raises_for_missing_files():
@@ -422,6 +429,56 @@ def test_pixelhaus_arrow_points_toward_the_target_room():
     assert pixelhaus._arrow_rot(-300, 10) == 270
 
 
+@contextlib.contextmanager
+def _instant_camera():
+    """Pixelhaus draws its dialog only once the camera has landed - make every
+    flight instant so the walk/contract tests reach that drawing code."""
+    from themes import pixelhaus
+    old = pixelhaus.Camera.MIN_S, pixelhaus.Camera.MAX_S
+    pixelhaus.Camera.MIN_S = pixelhaus.Camera.MAX_S = 0.0
+    try:
+        yield
+    finally:
+        pixelhaus.Camera.MIN_S, pixelhaus.Camera.MAX_S = old
+
+
+def test_pixelhaus_keeps_the_dialog_while_scrolling_home():
+    # every encoder detent on Home re-aims the camera a little (drift toward the
+    # room the selection leads to) - that must not hide the menu while scrolling
+    from themes import pixelhaus
+    clock = [100.0]
+    old_clock, old_cam = pixelhaus._clock, pixelhaus._CAM
+    pixelhaus._clock, pixelhaus._CAM = (lambda: clock[0]), pixelhaus.Camera()
+    try:
+        s = make_state()
+        s.settings.set("display", "theme", "pixelhaus")
+        ui_render.render(s)
+        s.home_sel = 1
+        clock[0] += 0.1
+        img = ui_render.render(s)
+        assert ui_render.animating(s)                          # the drift is still in flight...
+        assert img.getpixel((120, 203)) == pixelhaus.BOX_EDGE  # ...but the dialog stays on screen
+    finally:
+        pixelhaus._clock, pixelhaus._CAM = old_clock, old_cam
+
+
+def test_every_design_shows_the_whole_retry_hint():
+    # WLAN password failed: "Play: erneut versuchen" is the only hint how to retry
+    status = StatusView(None, False, None, None, True, False, True, False, False)
+
+    def frame(theme, hint, scale):
+        v = MessageView(ui_state.SCREEN_WIFI_PASSWORD, "WLAN-Passwort", "error", "Fehler:",
+                        detail="Falsches Passwort", hint=hint, subtitle="Heimnetz")
+        return theme.draw_message(v, RenderCtx(scale, status))
+
+    with _instant_camera():
+        for name, theme in themes.THEMES.items():
+            for scale in (1.0, ui_render.UI_SCALE_STEPS[5]):
+                diff = ImageChops.difference(frame(theme, "Play: erneut versuchen", scale),
+                                             frame(theme, "", scale)).getbbox()
+                assert diff and diff[2] - diff[0] >= 80, (name, scale, diff)
+
+
 def test_pixelhaus_renders_without_its_asset():
     # Review Focus 4: assets/pixelhaus.png not deployed
     from themes import pixelhaus
@@ -429,9 +486,10 @@ def test_pixelhaus_renders_without_its_asset():
     pixelhaus.ASSET_PATH = "gibt/es/nicht.png"
     pixelhaus._house.cache_clear()
     try:
-        s = make_state()
-        s.settings.set("display", "theme", "pixelhaus")
-        _walk_all_screens(s)
+        with _instant_camera():
+            s = make_state()
+            s.settings.set("display", "theme", "pixelhaus")
+            _walk_all_screens(s)
     finally:
         pixelhaus.ASSET_PATH = old
         pixelhaus._house.cache_clear()
