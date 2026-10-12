@@ -6,7 +6,8 @@ all need root: `nmcli general permissions` on this Pi reports enable-disable-wif
 polkit would normally prompt, but there's no polkit agent in a headless SSH/
 systemd session to answer it, so it fails outright the same as "no" does. Every
 such call below goes through `sudo -n`. Requires a one-time NOPASSWD sudoers
-entry covering exactly these nmcli subcommands - see CLAUDE.md.
+entry covering exactly these nmcli subcommands - installed by setup_pi.sh
+(/etc/sudoers.d/mp3player-nmcli).
 
 Bluetooth radio power/scan/pair do NOT need sudo here: the BT adapter's rfkill
 soft-block is cleared once at boot by bluetooth-unblock.service (see

@@ -175,6 +175,13 @@ systemctl --user enable --now pipewire pipewire-pulse wireplumber
 # --- NOPASSWD sudoers rule for the power-button shutdown path only ---
 echo 'pkenner ALL=(root) NOPASSWD: /usr/bin/systemctl poweroff' | sudo tee /etc/sudoers.d/mp3player-poweroff > /dev/null
 sudo chmod 440 /etc/sudoers.d/mp3player-poweroff
+
+# --- NOPASSWD sudoers rule for exactly the nmcli calls in connectivity.py
+# (WiFi radio on/off, rescan, connect, connection up/down/delete) ---
+sudo tee /etc/sudoers.d/mp3player-nmcli > /dev/null <<'EOF'
+pkenner ALL=(root) NOPASSWD: /usr/bin/nmcli radio wifi on, /usr/bin/nmcli radio wifi off, /usr/bin/nmcli dev wifi rescan, /usr/bin/nmcli dev wifi connect *, /usr/bin/nmcli connection up *, /usr/bin/nmcli connection down *, /usr/bin/nmcli connection delete *
+EOF
+sudo chmod 440 /etc/sudoers.d/mp3player-nmcli
 sudo visudo -c
 
 # --- boot speed: cloud-init and NetworkManager-wait-online cost ~8.5s
