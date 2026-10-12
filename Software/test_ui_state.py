@@ -425,6 +425,19 @@ def test_note_now_playing_is_a_noop_with_nothing_playing():
     assert s.last_played is None
 
 
+def test_design_choice_cycles_through_all_designs():
+    s = make_state()
+    s.settings_category = "display"
+    s.settings_detail_sel = next(i for i, it in enumerate(ui_state.SETTINGS_ITEMS["display"])
+                                 if it["key"] == "theme")
+    values = [v for v, _ in ui_state.THEME_CHOICES]
+    seen = []
+    for _ in values:
+        s.settings_detail_activate()
+        seen.append(s.settings.get("display", "theme"))
+    assert seen == values[1:] + values[:1]  # every design once, then back to Klassik
+
+
 if __name__ == "__main__":
     tests = [v for k, v in list(globals().items()) if k.startswith("test_")]
     for t in tests:

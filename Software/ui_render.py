@@ -33,6 +33,12 @@ def render(state):
     return img
 
 
+def animating(state):
+    """True while the active design is mid-animation and wants frames even
+    without input - the Pixelhaus camera flight (see main.py)."""
+    return getattr(_theme(state), "animating", lambda: False)()
+
+
 def render_shutdown(state=None):
     """Standalone message screen for the power-button long-press (power_button.py) -
     not part of the screen/state machine (nothing to navigate back from)."""

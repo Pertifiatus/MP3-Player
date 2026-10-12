@@ -38,6 +38,8 @@ WIFI_RESCAN_INTERVAL = 6  # re-scan periodically while sitting on the WLAN list,
 SYNC_REDRAW_INTERVAL = 0.5  # same reasoning - device-flow poll / download progress land via SyncWorker
 QUICK_CONNECT_REDRAW_INTERVAL = 0.1  # animates the hold-ring, and catches BTWorker's async "connecting"->"error" -
                                       # the success case is already caught by the state.screen change below
+ANIM_REDRAW_INTERVAL = 0.05  # design animations (Pixelhaus camera flight) - effectively "as fast
+                             # as the SPI push allows"; ui_render.animating() is False otherwise
 BATTERY_POLL_INTERVAL = 30  # SOC changes slowly - no reason to hit I2C more often
 ETA_CALC_INTERVAL = 60  # remaining-runtime estimate: recompute/smooth at most once a minute
 ETA_SMOOTHING = 0.3  # EMA weight for the newest sample - low so the estimate doesn't jump around
@@ -673,6 +675,7 @@ def main():
     last_wifi_rescan = time.monotonic()
     last_sync_redraw = time.monotonic()
     last_qc_redraw = time.monotonic()
+    last_anim_redraw = time.monotonic()
     last_rendered_screen = state.screen
     last_activity = time.monotonic()
     last_seen_wifi_connected = state.wifi_connected
@@ -722,7 +725,7 @@ def main():
 
         pb_event = power_button.poll()
         if pb_event == "shutdown":
-            sink.push(ui_render.render_shutdown())
+            sink.push(ui_render.render_shutdown(state))
             trigger_shutdown()
             return
         if pb_event == "short_press":
@@ -900,6 +903,12 @@ def main():
         elif state.qc_phase == "error":
             if state.quick_connect_error_tick():
                 dirty = True
+
+        # The active design wants frames without input (Pixelhaus camera flight
+        # between rooms) - False for every other design, and once it has landed.
+        if ui_render.animating(state) and now - last_anim_redraw >= ANIM_REDRAW_INTERVAL:
+            last_anim_redraw = now
+            dirty = True
 
         if dirty and not screen_off:
             render_start = time.monotonic()

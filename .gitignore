@@ -12,6 +12,9 @@ Software/library.json
 __pycache__/
 *.pyc
 
+# preview_themes.py output
+Software/previews/
+
 # superpowers:brainstorming visual-companion scratch files
 .superpowers/
 
