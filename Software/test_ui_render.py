@@ -411,6 +411,17 @@ def test_pixelhaus_camera_snaps_first_then_flies_and_settles():
         pixelhaus._clock, pixelhaus._CAM = old_clock, old_cam
 
 
+def test_pixelhaus_arrow_points_toward_the_target_room():
+    from themes import pixelhaus
+    assert pixelhaus._rotated("arrow", 0)[0] == "..X.."                                # tip up
+    assert [r[-1] for r in pixelhaus._rotated("arrow", 90)] == [".", ".", "X", ".", "."]  # tip right
+    assert pixelhaus._rotated("arrow", 180)[-1] == "..X.."                             # tip down
+    assert pixelhaus._arrow_rot(706, -175) == 90   # living room -> library: mostly right
+    assert pixelhaus._arrow_rot(-50, -400) == 0    # mostly up
+    assert pixelhaus._arrow_rot(0, 300) == 180
+    assert pixelhaus._arrow_rot(-300, 10) == 270
+
+
 def test_pixelhaus_renders_without_its_asset():
     # Review Focus 4: assets/pixelhaus.png not deployed
     from themes import pixelhaus

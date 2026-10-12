@@ -222,16 +222,89 @@ def _label(img, xy, s, fill, max_w):
     return _ptext(ImageDraw.Draw(img), (xy[0], xy[1] + 8), s, fill, max_w=max_w)
 
 
-def _cursor(draw, x, y, color=GOLD):
-    draw.polygon([(x, y), (x, y + 10), (x + 5, y + 5)], fill=color)
 
 
-def _strip(img, y, text):
-    """Small title strip (Task 12 swaps this for the wooden room sign)."""
+# --- pixel sprites + room decoration ------------------------------------------------------
+
+SPRITES = {
+    "play":    ["X....", "XXX..", "XXXXX", "XXX..", "X...."],
+    "pause":   ["XX.XX", "XX.XX", "XX.XX", "XX.XX", "XX.XX"],
+    "note":    ["...XX", "...X.", "...X.", "...X.", ".XXX.", "XXXX.", ".XX.."],
+    "shuffle": ["X...X", ".X.X.", "..X..", ".X.X.", "X...X"],
+    "arrow":   ["..X..", ".XXX.", "XXXXX", "..X..", "..X.."],  # points up
+    "z":       ["XXXXX", "...X.", "..X..", ".X...", "XXXXX"],
+}
+WOOD = (122, 74, 40)
+WOOD_DARK = (70, 40, 22)
+# Where the direction arrow sits for each of its four rotations - fixed spots
+# rather than a radius, so an "up" arrow never lands on the room sign.
+ARROW_SPOTS = {0: (113, 50), 90: (203, 96), 180: (113, 112), 270: (22, 96)}
+
+
+def _rotated(name, rot=0):
+    rows = SPRITES[name]
+    for _ in range((rot // 90) % 4):  # rotate the bitmap clockwise
+        rows = ["".join(r[i] for r in reversed(rows)) for i in range(len(rows[0]))]
+    return rows
+
+
+def _sprite(img, name, x, y, color, cell=2, rot=0):
+    d = ImageDraw.Draw(img)
+    for j, row in enumerate(_rotated(name, rot)):
+        for i, c in enumerate(row):
+            if c == "X":
+                d.rectangle([x + i * cell, y + j * cell, x + i * cell + cell - 1, y + j * cell + cell - 1], fill=color)
+
+
+def _arrow_rot(dx, dy):
+    """Sprite rotation (clockwise from 'up') closest to the direction (dx, dy)."""
+    if abs(dx) >= abs(dy):
+        return 90 if dx > 0 else 270
+    return 180 if dy > 0 else 0
+
+
+def _sign(img, text):
+    """Wooden plaque hanging at the top of the room with the screen's name."""
     draw = ImageDraw.Draw(img)
-    w = min(150, ui_common.text_len(ui_common.glyph_safe(text, _pf()), _pf()) + 16)
-    _box(draw, (120 - w / 2, y - 9, 120 + w / 2, y + 9))
-    _ptext(draw, (120, y), text, CREAM, max_w=w - 12, anchor="mm")
+    f = _pf()
+    s = ui_common.fit(text, f, 84)
+    w = min(100, ui_common.text_len(s, f) + 16)
+    x0, x1, y0, y1 = 120 - w / 2, 120 + w / 2, 30, 46
+    draw.line([(x0 + 6, y0), (x0 + 12, 22)], fill=WOOD_DARK)
+    draw.line([(x1 - 6, y0), (x1 - 12, 22)], fill=WOOD_DARK)
+    draw.rectangle([x0, y0, x1, y1], fill=WOOD, outline=WOOD_DARK, width=2)
+    for nx in (x0 + 4, x1 - 6):
+        draw.rectangle([nx, y0 + 3, nx + 1, y0 + 4], fill=GOLD)
+    _ptext(draw, (120, (y0 + y1) / 2 + 1), s, CREAM, anchor="mm")
+
+
+@functools.lru_cache(maxsize=32)
+def _pixel_cover(ref, cells=16, px=3):
+    return ui_common.cover_image(ref, cells).resize((cells * px, cells * px), Image.NEAREST)
+
+
+def _frame(img, cover, cx, cy):
+    """Cover hung on the wall: dark wood frame with a gold inner rim."""
+    w = cover.width
+    x0, y0 = int(cx - w / 2), int(cy - w / 2)
+    draw = ImageDraw.Draw(img)
+    draw.rectangle([x0 - 4, y0 - 4, x0 + w + 3, y0 + w + 3], fill=WOOD_DARK)
+    draw.rectangle([x0 - 2, y0 - 2, x0 + w + 1, y0 + w + 1], fill=GOLD)
+    img.paste(cover, (x0, y0))
+
+
+def _arrow(img, view):
+    """On Home/Werkstatt: which way the camera will float if you click."""
+    focus = _focus_room(view)
+    room = _room_of(view)
+    if not focus or focus == room:
+        return
+    rot = _arrow_rot(ROOMS[focus][0] - ROOMS[room][0], ROOMS[focus][1] - ROOMS[room][1])
+    _sprite(img, "arrow", *ARROW_SPOTS[rot], GOLD, cell=3, rot=rot)
+
+
+def _cursor(img, x, y, color=GOLD):
+    _sprite(img, "play", x, y, color)
 
 
 def _tail(s, max_w):
@@ -252,25 +325,45 @@ def _value_text(row):
     return str(row.value)
 
 
+def _value_widget(img, row, x, y):
+    """Pixel switch / segment bar for toggles and steppers, text otherwise."""
+    draw = ImageDraw.Draw(img)
+    if row.kind == "toggle":
+        draw.rectangle([x, y, x + 15, y + 7], outline=CREAM, width=2)
+        kx = x + 8 if row.value else x + 2
+        draw.rectangle([kx, y + 2, kx + 5, y + 5], fill=GOLD if row.value else DIMC)
+        _ptext(draw, (x + 22, y - 2), "AN" if row.value else "AUS", GOLD if row.value else DIMC)
+    elif row.kind == "stepper":
+        v = max(0, min(row.value, row.max))
+        for k in range(row.max):
+            draw.rectangle([x + k * 6, y, x + k * 6 + 3, y + 5], fill=GOLD if k < v else BOX_SHADE)
+    else:
+        _ptext(draw, (x, y - 2), str(row.value), GOLD, max_w=_row_w(y) - (x - DIALOG[0] - 8))
+
+
 # --- views ------------------------------------------------------------------------
 
 def draw_list(view, ctx):
     img, arrived = _scene(view)
     if not arrived:
         return img
-    draw = ImageDraw.Draw(img)
     n = len(view.items)
     sel = max(0, min(view.sel, n - 1))
     item = view.items[sel]
+    _sign(img, view.title)
+    if item.cover is not None:
+        _frame(img, _pixel_cover(item.cover), 166, 92)  # right wall, clear of the direction arrow
+    _arrow(img, view)
+    draw = ImageDraw.Draw(img)
     _box(draw, DIALOG)
     if sel > 0:
         _ptext(draw, (44, 139), view.items[sel - 1].label, DIMC, max_w=_row_w(139) - 30)
     _ptext(draw, (198, 139), f"{sel + 1}/{n}", DIMC, anchor="ra")
     color = RED if item.tone == "danger" else (DIMC if item.tone == "muted" else CREAM)
-    _cursor(draw, 40, 156)
-    _label(img, (50, 148), item.label, color, _row_w(158) - 10)
+    _cursor(img, 40, 156)
+    _label(img, (52, 148), item.label, color, _row_w(158) - 12)
     if item.sub:
-        _ptext(draw, (50, 173), item.sub, GOLD, max_w=_row_w(173) - 10)
+        _ptext(draw, (52, 173), item.sub, GOLD, max_w=_row_w(173) - 12)
     if sel + 1 < n:
         _ptext(draw, (44, 187), view.items[sel + 1].label, DIMC, max_w=_row_w(187))
     return img
@@ -280,9 +373,12 @@ def draw_message(view, ctx):
     img, arrived = _scene(view)
     if not arrived:
         return img
-    if view.subtitle:
-        _strip(img, 120, view.subtitle)
+    _sign(img, view.title)
     draw = ImageDraw.Draw(img)
+    if view.subtitle:
+        w = min(150, ui_common.text_len(ui_common.glyph_safe(view.subtitle, _pf()), _pf()) + 16)
+        _box(draw, (120 - w / 2, 110, 120 + w / 2, 128))
+        _ptext(draw, (120, 119), view.subtitle, CREAM, max_w=w - 12, anchor="mm")
     _box(draw, DIALOG)
     color = {"busy": CREAM, "error": RED, "success": GREEN, "info": CREAM}[view.mood]
     text = view.text
@@ -302,7 +398,7 @@ def draw_settings(view, ctx):
     img, arrived = _scene(view)
     if not arrived:
         return img
-    _strip(img, 120, view.title)
+    _sign(img, view.title)
     draw = ImageDraw.Draw(img)
     n = len(view.rows)
     sel = max(0, min(view.sel, n - 1))
@@ -312,9 +408,9 @@ def draw_settings(view, ctx):
         prev = view.rows[sel - 1]
         _ptext(draw, (44, 139), f"{prev.label}: {_value_text(prev)}", DIMC, max_w=_row_w(139) - 30)
     _ptext(draw, (198, 139), f"{sel + 1}/{n}", DIMC, anchor="ra")
-    _cursor(draw, 40, 156)
-    _label(img, (50, 148), row.label, CREAM, _row_w(158) - 10)
-    _ptext(draw, (50, 173), _value_text(row), GOLD, max_w=_row_w(173) - 10)
+    _cursor(img, 40, 156)
+    _label(img, (52, 148), row.label, CREAM, _row_w(158) - 12)
+    _value_widget(img, row, 52, 175)
     if sel + 1 < n:
         nxt = view.rows[sel + 1]
         _ptext(draw, (44, 187), f"{nxt.label}: {_value_text(nxt)}", DIMC, max_w=_row_w(187))
@@ -332,18 +428,22 @@ def draw_playing(view, ctx):
     img, arrived = _scene(view)
     if not arrived:
         return img
+    _sign(img, "Musikzimmer")
+    _frame(img, _pixel_cover(view.cover), 120, 86)
+    if view.playing:  # notes rise from the piano - driven by the playback position, no idle animation
+        for k in range(3):
+            phase = (view.position * 0.4 + k / 3) % 1
+            _sprite(img, "note", 50 + 16 * k + 6 * math.sin(phase * 6.28), 98 - 56 * phase, GOLD)
     draw = ImageDraw.Draw(img)
     _box(draw, DIALOG)
     _label(img, (44, 140), view.title, CREAM, _row_w(148) - 4)
     _ptext(draw, (44, 165), view.artist, GOLD, max_w=_row_w(165))
     progress = view.position / view.duration if view.duration else 0.0
     _bar(draw, 48, 178, 40, progress)
-    _ptext(draw, (48, 187), f"{fmt_time(view.position)}/{fmt_time(view.duration)}", DIMC)
-    if view.playing:
-        draw.rectangle([178, 177, 180, 185], fill=CREAM)
-        draw.rectangle([184, 177, 186, 185], fill=CREAM)
-    else:
-        _cursor(draw, 178, 176, CREAM)
+    w = _ptext(draw, (48, 187), f"{fmt_time(view.position)}/{fmt_time(view.duration)}", DIMC)
+    if view.shuffle:
+        _sprite(img, "shuffle", 54 + w, 189, GOLD, cell=1)
+    _sprite(img, "pause" if view.playing else "play", 176, 176, CREAM)
     return img
 
 
@@ -351,6 +451,7 @@ def draw_code(view, ctx):
     img, arrived = _scene(view)
     if not arrived:
         return img
+    _sign(img, view.title)
     draw = ImageDraw.Draw(img)
     _box(draw, (34, 112, 206, 204))
     _ptext(draw, (44, 118), "Gehe zu", DIMC)
@@ -365,6 +466,7 @@ def draw_progress(view, ctx):
     img, arrived = _scene(view)
     if not arrived:
         return img
+    _sign(img, view.title)
     draw = ImageDraw.Draw(img)
     _box(draw, DIALOG)
     _big(img, (44, 140), f"{view.current}/{view.total}", CREAM)
@@ -380,6 +482,7 @@ def draw_password(view, ctx):
     img, arrived = _scene(view)
     if not arrived:
         return img
+    _sign(img, view.title)
     draw = ImageDraw.Draw(img)
     _box(draw, (34, 112, 206, 204))
     _ptext(draw, (44, 118), view.ssid, DIMC, max_w=_row_w(118))
@@ -398,9 +501,34 @@ def draw_password(view, ctx):
 
 
 def draw_status(img, sv, ctx):
-    ui_common.draw_ring_status(img, sv, {"track": (60, 50, 70), "fill": GOLD, "low": RED, "off": (90, 80, 100),
-                                         "wifi": CREAM, "bt": (120, 170, 255), "text": CREAM, "accent": GREEN,
-                                         "font": _pf(), "segments": 10, "dot": "square"})
+    """Blocky pixel ring: 4x4 squares along the bezel arc, square WLAN/BT dots."""
+    draw = ImageDraw.Draw(img)
+    pct = None if sv.battery_pct is None else max(0, min(100, round(sv.battery_pct)))
+    bound = ui_common.RING_FAR_DEG + (ui_common.RING_ANCHOR_DEG - ui_common.RING_FAR_DEG) * (pct or 0) / 100
+    fill = RED if pct is not None and pct <= 20 else GOLD
+    for deg in range(ui_common.RING_FAR_DEG, ui_common.RING_ANCHOR_DEG + 1, 4):
+        x, y = ui_common.ring_point(deg, r=115)
+        x, y = int(x) // 2 * 2, int(y) // 2 * 2
+        lit = pct is not None and pct > 0 and deg <= bound
+        draw.rectangle([x - 2, y - 2, x + 1, y + 1], fill=fill if lit else (60, 50, 70))
+    if pct is not None and sv.charging:
+        ui_common.lightning_bolt(draw, *ui_common.ring_point(180, r=104), 12, GREEN)
+    for deg, color, on, connected in ((ui_common.WIFI_DOT_DEG, CREAM, sv.wifi_on, sv.wifi_connected),
+                                      (ui_common.BT_DOT_DEG, (120, 170, 255), sv.bt_on, sv.bt_connected)):
+        x, y = ui_common.ring_point(deg, r=113)
+        x, y = int(x) // 2 * 2, int(y) // 2 * 2
+        box = [x - 4, y - 4, x + 3, y + 3]
+        if not on:
+            draw.rectangle(box, fill=(90, 80, 100))
+        else:
+            draw.rectangle(box, fill=color if connected else BOX, outline=color, width=2)
+    if pct is not None and sv.show_labels:
+        px, py = ui_common.ring_point(ui_common.RING_ANCHOR_DEG, r=100)
+        _ptext(draw, (px + 10, py - 12), f"{pct}%", CREAM, anchor="ma")
+        if sv.charging and sv.watts is not None:
+            _ptext(draw, (px, py), f"{round(sv.watts)}W", GREEN, anchor="ma")
+        elif not sv.charging and sv.eta_min is not None:
+            _ptext(draw, (px, py), ui_common.format_eta(sv.eta_min), CREAM, anchor="ma")
 
 
 def draw_quick_connect(img, qc, ctx):
@@ -413,7 +541,10 @@ def draw_quick_connect(img, qc, ctx):
 def draw_shutdown(ctx):
     x, y = ROOMS["schlafzimmer"]
     img = _crop(x, y + VIEW_DY)
+    _sign(img, "Schlafzimmer")
     draw = ImageDraw.Draw(img)
+    for (zx, zy), cell in zip(((108, 100), (116, 86), (128, 64)), (1, 2, 3)):  # Zzz rising above the bed
+        _sprite(img, "z", zx, zy, CREAM, cell=cell)
     _box(draw, DIALOG)
     _big(img, (52, 152), "Gute Nacht…", CREAM)
     return img
