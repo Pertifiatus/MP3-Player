@@ -16,7 +16,7 @@ import ui_render
 import connectivity
 import sync_youtube
 from buttonbox import ButtonBox, ThreadedPoller
-from power_button import PowerButton, trigger_shutdown
+from power_button import PowerButton, LowBatteryMonitor, trigger_shutdown
 from settings import Settings
 from qmi8658 import QMI8658, orientation, magnitude, SHAKE_THRESHOLD_G
 from max17048 import MAX17048
@@ -41,6 +41,8 @@ QUICK_CONNECT_REDRAW_INTERVAL = 0.1  # animates the hold-ring, and catches BTWor
 ANIM_REDRAW_INTERVAL = 0.05  # design animations (Pixelhaus camera flight) - effectively "as fast
                              # as the SPI push allows"; ui_render.animating() is False otherwise
 BATTERY_POLL_INTERVAL = 30  # SOC changes slowly - no reason to hit I2C more often
+LOW_BATTERY_POLL_INTERVAL = 5  # at/under LOW_BATTERY_POLL_PCT the cell can sag fast under load, 30s is too slow to catch it
+LOW_BATTERY_POLL_PCT = 10
 ETA_CALC_INTERVAL = 60  # remaining-runtime estimate: recompute/smooth at most once a minute
 ETA_SMOOTHING = 0.3  # EMA weight for the newest sample - low so the estimate doesn't jump around
 STATUS_POLL_INTERVAL = 10  # WLAN/BT "connected" check - cheap nmcli/bluetoothctl queries, no scan involved
@@ -666,6 +668,7 @@ def main():
     last_playing_redraw = time.monotonic()
     last_motion_poll = time.monotonic()
     last_battery_poll = time.monotonic() - BATTERY_POLL_INTERVAL  # fire on the first iteration, not after a full interval
+    low_battery = LowBatteryMonitor()
     last_eta_calc = time.monotonic() - ETA_CALC_INTERVAL
     eta_prev_soc = None
     eta_prev_time = None
@@ -771,7 +774,10 @@ def main():
             if apply_motion_features(state):
                 dirty = True
 
-        if battery_gauge is not None and now - last_battery_poll >= BATTERY_POLL_INTERVAL:
+        battery_poll_interval = (LOW_BATTERY_POLL_INTERVAL
+                                 if state.battery_pct is not None and state.battery_pct <= LOW_BATTERY_POLL_PCT
+                                 else BATTERY_POLL_INTERVAL)
+        if battery_gauge is not None and now - last_battery_poll >= battery_poll_interval:
             last_battery_poll = now
             try:
                 new_pct = round(battery_gauge.read_soc_pct())
@@ -786,6 +792,11 @@ def main():
                     new_charging = charger.read_status() == "charging"
                 except OSError:
                     new_charging = state.charging
+
+            if low_battery.update(new_vcell, new_charging, now):
+                sink.push(ui_render.render_shutdown(state))
+                trigger_shutdown()
+                return
 
             if new_charging != state.charging and not new_charging:
                 # Just unplugged - drop the smoothed drain rate rather than let the

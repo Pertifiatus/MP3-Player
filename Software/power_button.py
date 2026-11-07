@@ -47,6 +47,33 @@ class PowerButton:
         return None if fired else "short_press"
 
 
+LOW_BATTERY_SHUTDOWN_V = 3.3
+LOW_BATTERY_DEBOUNCE_S = 10.0
+# A cell below this isn't a real reading - the pack can't run the Pi at all down
+# there, so it means no cell attached (dev on USB/lab supply) or a gauge glitch,
+# and shutting down on it would kill every unplugged-battery dev session.
+LOW_BATTERY_MIN_PLAUSIBLE_V = 2.0
+
+
+class LowBatteryMonitor:
+    def __init__(self):
+        self._below_since = None
+
+    def update(self, vcell, charging, now):
+        """Feed every battery poll; True once the cell has sat at or under
+        LOW_BATTERY_SHUTDOWN_V for LOW_BATTERY_DEBOUNCE_S without charging. The
+        debounce ignores load-induced sag from short spikes (WLAN sync, audio).
+        vcell=None (I2C hiccup) is no information - leaves the timer untouched."""
+        if vcell is None:
+            return False
+        if charging or not LOW_BATTERY_MIN_PLAUSIBLE_V <= vcell <= LOW_BATTERY_SHUTDOWN_V:
+            self._below_since = None
+            return False
+        if self._below_since is None:
+            self._below_since = now
+        return now - self._below_since >= LOW_BATTERY_DEBOUNCE_S
+
+
 def trigger_shutdown():
     """Needs a scoped NOPASSWD sudoers rule - plain `sudo systemctl poweroff`
     run from a script has no TTY to answer a password prompt on and would

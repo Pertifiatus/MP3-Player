@@ -26,7 +26,8 @@ if "digitalio" not in sys.modules:
     sys.modules["digitalio"] = digitalio_stub
 
 import power_button
-from power_button import PowerButton, SHUTDOWN_HOLD_S
+from power_button import (PowerButton, SHUTDOWN_HOLD_S, LowBatteryMonitor, LOW_BATTERY_SHUTDOWN_V,
+                          LOW_BATTERY_DEBOUNCE_S)
 
 
 class _FakeClock:
@@ -119,6 +120,37 @@ def test_next_press_after_release_works_normally():
         assert pb.poll() is None
     finally:
         power_button.time.monotonic = original
+
+
+def test_low_battery_fires_only_after_debounce():
+    m = LowBatteryMonitor()
+    assert m.update(LOW_BATTERY_SHUTDOWN_V, False, 100.0) is False  # at the threshold counts, timer starts
+    assert m.update(3.25, False, 100.0 + LOW_BATTERY_DEBOUNCE_S - 0.1) is False
+    assert m.update(3.25, False, 100.0 + LOW_BATTERY_DEBOUNCE_S) is True
+
+
+def test_low_battery_recovery_resets_timer():
+    m = LowBatteryMonitor()
+    assert m.update(3.2, False, 0.0) is False
+    assert m.update(3.6, False, 5.0) is False  # load spike passed, back above threshold
+    assert m.update(3.2, False, 9.0) is False  # timer restarted at 9, not 0
+    assert m.update(3.2, False, 9.0 + LOW_BATTERY_DEBOUNCE_S - 0.1) is False
+    assert m.update(3.2, False, 9.0 + LOW_BATTERY_DEBOUNCE_S) is True
+
+
+def test_low_battery_never_fires_while_charging_or_without_a_cell():
+    m = LowBatteryMonitor()
+    assert m.update(3.0, True, 0.0) is False
+    assert m.update(3.0, True, 1000.0) is False  # charging: never
+    assert m.update(0.0, False, 2000.0) is False  # no cell attached reads ~0V
+    assert m.update(0.0, False, 3000.0) is False
+
+
+def test_low_battery_i2c_hiccup_keeps_timer():
+    m = LowBatteryMonitor()
+    assert m.update(3.2, False, 0.0) is False
+    assert m.update(None, False, 5.0) is False  # no information
+    assert m.update(3.2, False, LOW_BATTERY_DEBOUNCE_S) is True
 
 
 if __name__ == "__main__":
